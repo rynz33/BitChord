@@ -127,6 +127,20 @@ enum class ThemeMode(val label: String) {
     SYSTEM("System"), LIGHT("Light"), DARK("Dark")
 }
 
+enum class AccentTheme(val label: String, val hexAccent: Long, val description: String) {
+    VIOLET_GLOW("Rynz Violet", 0xFF8B5CF6, "Flagship vibrant violet with deep midnight undertones"),
+    CYBER_CYAN("Cyber Cyan", 0xFF00E5FF, "Electric cyan & neon teal with futuristic obsidian contrast"),
+    EMERALD_AURORA("Emerald Aurora", 0xFF10B981, "Vivid emerald green with mint ambient glow"),
+    SUNSET_CRIMSON("Sunset Crimson", 0xFFFF2A55, "Passionate coral crimson with warm dark wine hue"),
+    ELECTRIC_AMBER("Electric Amber", 0xFFF59E0B, "Sophisticated champagne amber with luxury dark bronze"),
+    MIDNIGHT_OLED("Midnight OLED", 0xFFF8FAFC, "Minimalist pitch black with crisp platinum white");
+
+    companion object {
+        fun fromName(name: String?): AccentTheme =
+            entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: VIOLET_GLOW
+    }
+}
+
 /**
  * How the app's SF Pro Display is set. [DEFAULT] draws each weight one cut
  * lighter and spaces it to Apple Music's own screens; [LEGACY] is the cut the
@@ -410,6 +424,7 @@ object AppSettings {
 
     val playbackSpeed = MutableStateFlow(1.0f)
     val themeMode = MutableStateFlow(ThemeMode.DARK)
+    val accentTheme = MutableStateFlow(AccentTheme.VIOLET_GLOW)
     val appFont = MutableStateFlow(AppFont.DEFAULT)
 
     /** Keep playing similar music once the queue runs out. */
@@ -1011,6 +1026,9 @@ object AppSettings {
         themeMode.value = runCatching {
             ThemeMode.valueOf(prefs.getString(KEY_THEME, null) ?: "DARK")
         }.getOrDefault(ThemeMode.DARK)
+        accentTheme.value = runCatching {
+            AccentTheme.valueOf(prefs.getString(KEY_ACCENT_THEME, null) ?: AccentTheme.VIOLET_GLOW.name)
+        }.getOrDefault(AccentTheme.VIOLET_GLOW)
         appFont.value = runCatching {
             AppFont.valueOf(prefs.getString(KEY_APP_FONT, null) ?: AppFont.DEFAULT.name)
         }.getOrDefault(AppFont.DEFAULT)
@@ -1404,6 +1422,11 @@ object AppSettings {
     fun setThemeMode(value: ThemeMode) {
         themeMode.value = value
         prefs.edit().putString(KEY_THEME, value.name).apply()
+    }
+
+    fun setAccentTheme(value: AccentTheme) {
+        accentTheme.value = value
+        prefs.edit().putString(KEY_ACCENT_THEME, value.name).apply()
     }
 
     fun setAppFont(value: AppFont) {
@@ -2278,6 +2301,7 @@ object AppSettings {
     private const val KEY_EQ_BANDS = "equalizer_bands"
     private const val KEY_SPEED = "playback_speed"
     private const val KEY_THEME = "theme_mode"
+    private const val KEY_ACCENT_THEME = "accent_theme_palette"
     private const val KEY_APP_FONT = "app_font"
     private const val KEY_AUTOPLAY = "autoplay"
     private const val KEY_SHUFFLE_ENABLED = "shuffle_enabled"

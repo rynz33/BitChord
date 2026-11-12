@@ -168,6 +168,7 @@ import com.music.bitchord.data.sources.DeviceCodecs
 import com.music.bitchord.data.settings.AudioQuality
 import com.music.bitchord.data.settings.DownloadQuality
 import com.music.bitchord.data.settings.ThemeMode
+import com.music.bitchord.data.settings.AccentTheme
 import com.music.bitchord.data.settings.AppFont
 import com.music.bitchord.data.settings.PlayerTheme
 import com.music.bitchord.data.stats.Backup
@@ -261,6 +262,7 @@ fun SettingsScreen(
     val lyricsSources by AppSettings.lyricsSources.collectAsStateWithLifecycle()
     val translationLanguage by AppSettings.translationLanguage.collectAsStateWithLifecycle()
     val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
+    val accentTheme by AppSettings.accentTheme.collectAsStateWithLifecycle()
     val appFont by AppSettings.appFont.collectAsStateWithLifecycle()
     val sessionId by AppSettings.audioSessionId.collectAsStateWithLifecycle()
     val outputPcmMode by AppSettings.outputPcmMode.collectAsStateWithLifecycle()
@@ -1008,6 +1010,49 @@ fun SettingsScreen(
                     onSelect = { AppSettings.setThemeMode(ThemeMode.entries[it]) },
                     modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 )
+            }
+            val colorThemeTitle = stringResource(R.string.color_theme)
+            row(colorThemeTitle, "accent", "palette", "custom theme", "neon", "violet", "cyan") {
+                SettingsRow(
+                    icon = Icons.Rounded.Gradient,
+                    title = colorThemeTitle,
+                    subtitle = accentTheme.description,
+                    value = accentTheme.label,
+                    onClick = { onOpenChoice(SettingsChoiceKind.ACCENT_THEME) },
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                ) {
+                    AccentTheme.entries.forEach { palette ->
+                        val isSelected = palette == accentTheme
+                        val swatchColor = Color(palette.hexAccent)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(swatchColor)
+                                .border(
+                                    width = if (isSelected) 3.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onBackground else Color.Transparent,
+                                    shape = CircleShape,
+                                )
+                                .clickable {
+                                    AppSettings.setAccentTheme(palette)
+                                },
+                        ) {
+                            if (isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White),
+                                )
+                            }
+                        }
+                    }
+                }
             }
             val fontTitle = stringResource(R.string.font)
             row(fontTitle, "typeface", "sf pro", "legacy") {
@@ -2853,6 +2898,7 @@ enum class SettingsChoiceKind(@param:StringRes val title: Int) {
     AUTOMIX_PERFORMANCE(R.string.automix_performance),
     BIT_PERFECT(R.string.bit_perfect_output),
     FONT(R.string.font),
+    ACCENT_THEME(R.string.color_theme),
 }
 
 /** The main page's list of categories: a glyph and a name each, and a chevron into it. */
@@ -2982,6 +3028,20 @@ fun SettingsChoicePage(
                     footer = stringResource(R.string.font_footer),
                 ) { font ->
                     AppSettings.setAppFont(font)
+                    onChosen()
+                }
+            }
+
+            SettingsChoiceKind.ACCENT_THEME -> {
+                val selected by AppSettings.accentTheme.collectAsStateWithLifecycle()
+                ChoiceGroup(
+                    options = AccentTheme.entries,
+                    selected = selected,
+                    label = { it.label },
+                    detail = { it.description },
+                    footer = stringResource(R.string.color_theme_subtitle),
+                ) { palette ->
+                    AppSettings.setAccentTheme(palette)
                     onChosen()
                 }
             }

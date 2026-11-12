@@ -2,12 +2,16 @@ package com.music.bitchord.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -18,14 +22,179 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.music.bitchord.R
 import com.music.bitchord.data.settings.AppFont
+import com.music.bitchord.data.settings.AccentTheme
 
-// Apple Music's signature red. No longer the primary accent, but kept for the
-// spots (Replay's rank badge) that want that specific red regardless of theme.
+val LocalAccentColor = staticCompositionLocalOf { Color(0xFF8B5CF6) }
+
+// Apple Music's signature red. Kept for Replay rank badges.
 val AccentRed = Color(0xFFFA2D48)
 
-private val DarkColors = darkColorScheme(
+/* =========================================================================
+ * RynzMusic Multi-Theme Color Palettes
+ * ========================================================================= */
+
+// 1. Rynz Violet Glow (Flagship theme)
+private val VioletDarkColors = darkColorScheme(
+    primary = Color(0xFFA78BFA),
+    onPrimary = Color(0xFF0D0B14),
+    secondary = Color(0xFF818CF8),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFC084FC),
+    background = Color(0xFF090710),
+    onBackground = Color(0xFFF8FAFC),
+    surface = Color(0xFF120E1F),
+    onSurface = Color(0xFFF1F5F9),
+    surfaceVariant = Color(0xFF1D1730),
+    onSurfaceVariant = Color(0xFFA59EC4),
+    outline = Color(0xFF332952),
+)
+
+private val VioletLightColors = lightColorScheme(
+    primary = Color(0xFF7C3AED),
+    onPrimary = Color.White,
+    secondary = Color(0xFF4F46E5),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF9333EA),
+    background = Color(0xFFF8F6FD),
+    onBackground = Color(0xFF0F0B1E),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF130F24),
+    surfaceVariant = Color(0xFFEFEAF8),
+    onSurfaceVariant = Color(0xFF6B6280),
+    outline = Color(0xFFDED8EB),
+)
+
+// 2. Cyber Cyan
+private val CyberCyanDarkColors = darkColorScheme(
+    primary = Color(0xFF22D3EE),
+    onPrimary = Color(0xFF041014),
+    secondary = Color(0xFF38BDF8),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF06B6D4),
+    background = Color(0xFF040A0F),
+    onBackground = Color(0xFFF0FDF4),
+    surface = Color(0xFF081621),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF102636),
+    onSurfaceVariant = Color(0xFF789DAB),
+    outline = Color(0xFF1B4059),
+)
+
+private val CyberCyanLightColors = lightColorScheme(
+    primary = Color(0xFF0891B2),
+    onPrimary = Color.White,
+    secondary = Color(0xFF0284C7),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF0E7490),
+    background = Color(0xFFF4FAFC),
+    onBackground = Color(0xFF05171F),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF081621),
+    surfaceVariant = Color(0xFFE5F3F7),
+    onSurfaceVariant = Color(0xFF4E6B78),
+    outline = Color(0xFFCFE4EC),
+)
+
+// 3. Emerald Aurora
+private val EmeraldAuroraDarkColors = darkColorScheme(
+    primary = Color(0xFF34D399),
+    onPrimary = Color(0xFF03140C),
+    secondary = Color(0xFF10B981),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF6EE7B7),
+    background = Color(0xFF040E0A),
+    onBackground = Color.White,
+    surface = Color(0xFF091C14),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF112D21),
+    onSurfaceVariant = Color(0xFF7CA692),
+    outline = Color(0xFF1C4C38),
+)
+
+private val EmeraldAuroraLightColors = lightColorScheme(
+    primary = Color(0xFF059669),
+    onPrimary = Color.White,
+    secondary = Color(0xFF10B981),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF047857),
+    background = Color(0xFFF3FBF7),
+    onBackground = Color(0xFF051C12),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF091C14),
+    surfaceVariant = Color(0xFFE2F4EC),
+    onSurfaceVariant = Color(0xFF4A7260),
+    outline = Color(0xFFCBE7DB),
+)
+
+// 4. Sunset Crimson
+private val SunsetCrimsonDarkColors = darkColorScheme(
+    primary = Color(0xFFFB7185),
+    onPrimary = Color(0xFF170308),
+    secondary = Color(0xFFF43F5E),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFFDA4AF),
+    background = Color(0xFF100508),
+    onBackground = Color.White,
+    surface = Color(0xFF1F0B11),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF30131B),
+    onSurfaceVariant = Color(0xFFB58A94),
+    outline = Color(0xFF52202E),
+)
+
+private val SunsetCrimsonLightColors = lightColorScheme(
+    primary = Color(0xFFE11D48),
+    onPrimary = Color.White,
+    secondary = Color(0xFFBE123C),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFF43F5E),
+    background = Color(0xFFFFF5F7),
+    onBackground = Color(0xFF20050B),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1F0B11),
+    surfaceVariant = Color(0xFFFDE4E9),
+    onSurfaceVariant = Color(0xFF82505C),
+    outline = Color(0xFFF8CAD3),
+)
+
+// 5. Electric Amber
+private val ElectricAmberDarkColors = darkColorScheme(
+    primary = Color(0xFFFBBF24),
+    onPrimary = Color(0xFF171003),
+    secondary = Color(0xFFF59E0B),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFFCD34D),
+    background = Color(0xFF0E0B05),
+    onBackground = Color.White,
+    surface = Color(0xFF1C160B),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF2C2312),
+    onSurfaceVariant = Color(0xFFB2A387),
+    outline = Color(0xFF4A3C20),
+)
+
+private val ElectricAmberLightColors = lightColorScheme(
+    primary = Color(0xFFD97706),
+    onPrimary = Color.White,
+    secondary = Color(0xFFB45309),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFF59E0B),
+    background = Color(0xFFFFFBF2),
+    onBackground = Color(0xFF1D1404),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF1C160B),
+    surfaceVariant = Color(0xFFFBEFD7),
+    onSurfaceVariant = Color(0xFF786A4F),
+    outline = Color(0xFFF0DCB5),
+)
+
+// 6. Midnight OLED
+private val MidnightOledDarkColors = darkColorScheme(
     primary = Color.White,
     onPrimary = Color.Black,
+    secondary = Color(0xFFCBD5E1),
+    onSecondary = Color.Black,
+    tertiary = Color(0xFF94A3B8),
     background = Color.Black,
     onBackground = Color.White,
     surface = Color(0xFF0D0D0F),
@@ -35,9 +204,12 @@ private val DarkColors = darkColorScheme(
     outline = Color(0xFF2C2C2E),
 )
 
-private val LightColors = lightColorScheme(
+private val MidnightOledLightColors = lightColorScheme(
     primary = Color.Black,
     onPrimary = Color.White,
+    secondary = Color(0xFF334155),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF64748B),
     background = Color.White,
     onBackground = Color.Black,
     surface = Color(0xFFF7F7F9),
@@ -46,6 +218,15 @@ private val LightColors = lightColorScheme(
     onSurfaceVariant = Color(0xFF6E6E73),
     outline = Color(0xFFE5E5EA),
 )
+
+fun paletteFor(darkTheme: Boolean, accent: AccentTheme): ColorScheme = when (accent) {
+    AccentTheme.VIOLET_GLOW -> if (darkTheme) VioletDarkColors else VioletLightColors
+    AccentTheme.CYBER_CYAN -> if (darkTheme) CyberCyanDarkColors else CyberCyanLightColors
+    AccentTheme.EMERALD_AURORA -> if (darkTheme) EmeraldAuroraDarkColors else EmeraldAuroraLightColors
+    AccentTheme.SUNSET_CRIMSON -> if (darkTheme) SunsetCrimsonDarkColors else SunsetCrimsonLightColors
+    AccentTheme.ELECTRIC_AMBER -> if (darkTheme) ElectricAmberDarkColors else ElectricAmberLightColors
+    AccentTheme.MIDNIGHT_OLED -> if (darkTheme) MidnightOledDarkColors else MidnightOledLightColors
+}
 
 /**
  * SF Pro Display, the face Apple Music itself is set in, drawn one weight
@@ -141,18 +322,43 @@ private fun Typography.withFamily(family: FontFamily) = Typography(
 @Composable
 fun BitChordTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    accentTheme: AccentTheme = AccentTheme.VIOLET_GLOW,
     font: AppFont = AppFont.DEFAULT,
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = when (font) {
-            AppFont.DEFAULT -> BitChordTypography
-            AppFont.LEGACY -> LegacyTypography
-        },
-        content = content,
-    )
+    val colorScheme = remember(darkTheme, accentTheme) {
+        paletteFor(darkTheme, accentTheme)
+    }
+    val accentColor = remember(accentTheme) {
+        Color(accentTheme.hexAccent)
+    }
+    CompositionLocalProvider(LocalAccentColor provides accentColor) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = when (font) {
+                AppFont.DEFAULT -> BitChordTypography
+                AppFont.LEGACY -> LegacyTypography
+            },
+            content = content,
+        )
+    }
 }
+
+/**
+ * Flagship theme entry point for RynzMusic with dynamic Multi-Theme support.
+ */
+@Composable
+fun RynzTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    accentTheme: AccentTheme = AccentTheme.VIOLET_GLOW,
+    font: AppFont = AppFont.DEFAULT,
+    content: @Composable () -> Unit,
+) = BitChordTheme(
+    darkTheme = darkTheme,
+    accentTheme = accentTheme,
+    font = font,
+    content = content,
+)
 
 /**
  * Draws the status and navigation bar glyphs dark or light.
