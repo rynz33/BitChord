@@ -11,7 +11,8 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_preview_art">
+    android:background="@drawable/widget_preview_art"
+    android:clipToOutline="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -49,7 +50,7 @@
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:text="@string/widget_preview_artist"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#D9E2D9F3"
                 android:textSize="12sp" />
         </LinearLayout>
 

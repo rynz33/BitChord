@@ -47,7 +47,8 @@
         android:id="@+id/widget_pill"
         android:layout_width="match_parent"
         android:layout_height="@dimen/widget_pill_height"
-        android:layout_gravity="center_vertical">
+        android:layout_gravity="center_vertical"
+        android:clipToOutline="true">
 
         <ImageView
             android:id="@+id/widget_pill_bg"

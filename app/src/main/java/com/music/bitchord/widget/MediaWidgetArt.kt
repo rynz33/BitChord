@@ -371,7 +371,7 @@ internal object MediaWidgetArt {
             Paint().apply {
                 shader = LinearGradient(
                     0f, 0f, 0f, height.toFloat(),
-                    intArrayOf(0xFF2E3446.toInt(), 0xFF1B2130.toInt(), 0xFF07090E.toInt()),
+                    intArrayOf(0xFF2E1D4E.toInt(), 0xFF1A1230.toInt(), 0xFF090710.toInt()),
                     floatArrayOf(0f, 0.45f, 1f),
                     Shader.TileMode.CLAMP,
                 )
@@ -614,11 +614,18 @@ internal object MediaWidgetArt {
      * arc. Drawn through a shader instead, the round rect's own antialiasing
      * does the work.
      */
-    private fun Bitmap.withRoundedCorners(radiusPx: Float, alpha: Int = 255): Bitmap {
+    private fun Bitmap.withRoundedCorners(
+        radiusPx: Float,
+        alpha: Int = 255,
+        strokeColor: Int = 0x38A78BFA,
+        strokeWidthPx: Float = 2f,
+    ): Bitmap {
         if (radiusPx <= 0f && alpha == 255) return this
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        Canvas(out).drawRoundRect(
-            RectF(0f, 0f, width.toFloat(), height.toFloat()),
+        val canvas = Canvas(out)
+        val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+        canvas.drawRoundRect(
+            rect,
             radiusPx,
             radiusPx,
             Paint().apply {
@@ -627,6 +634,22 @@ internal object MediaWidgetArt {
                 shader = BitmapShader(this@withRoundedCorners, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
             },
         )
+        if (strokeWidthPx > 0f && strokeColor != Color.TRANSPARENT) {
+            val inset = strokeWidthPx / 2f
+            val borderRect = RectF(inset, inset, width - inset, height - inset)
+            val borderRadius = (radiusPx - inset).coerceAtLeast(0f)
+            canvas.drawRoundRect(
+                borderRect,
+                borderRadius,
+                borderRadius,
+                Paint().apply {
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = strokeWidthPx
+                    color = strokeColor
+                },
+            )
+        }
         return out
     }
 

@@ -12,7 +12,8 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_preview_art">
+    android:background="@drawable/widget_preview_art"
+    android:clipToOutline="true">
 
     <ImageView
         android:id="@+id/widget_art"
@@ -59,7 +60,7 @@
                 android:fontFamily="@font/sf_pro_display_regular"
                 android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#D9E2D9F3"
                 android:textSize="12sp" />
         </LinearLayout>
 

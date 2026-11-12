@@ -22,6 +22,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -36,10 +37,12 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.unit.Dp
@@ -99,8 +102,15 @@ fun ThinSlider(
     inactiveColor: Color = Color.White.copy(alpha = 0.26f),
     /** Halfway between the two track colours: visible against unplayed, invisible under played. */
     markerColor: Color = Color.White.copy(alpha = 0.5f),
+    /** RynzMusic dynamic theme accent blended into active track tip and scrub highlight. */
+    accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     var dragging by remember { mutableStateOf(false) }
+    val dragProgress by animateFloatAsState(
+        targetValue = if (dragging) 1f else 0f,
+        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+        label = "sliderDragAccent",
+    )
     val height by animateDpAsState(
         targetValue = if (dragging) activeHeight else idleHeight,
         animationSpec = spring(
@@ -206,13 +216,14 @@ fun ThinSlider(
                         .coerceIn(WINDOW_FEATHER_MIN.toPx(), WINDOW_FEATHER_MAX.toPx())
                         .coerceAtMost(span / 2f)
                     val f = feather / span
-                    val full = markerColor.alpha * windowAlpha
+                    val tintedMarker = lerp(markerColor, accentColor.copy(alpha = markerColor.alpha), 0.35f)
+                    val full = tintedMarker.alpha * windowAlpha
                     // Smoothstep down each feather: no slope break where the
                     // ramp meets the flat middle, so there is no line for the
                     // eye to catch at either end.
                     val ramp = (0..WINDOW_FEATHER_STEPS).map { step ->
                         val t = step / WINDOW_FEATHER_STEPS.toFloat()
-                        t to markerColor.copy(alpha = full * t * t * (3f - 2f * t))
+                        t to tintedMarker.copy(alpha = full * t * t * (3f - 2f * t))
                     }
                     val stops = ramp.map { (t, c) -> f * t to c } +
                         ramp.reversed().map { (t, c) -> 1f - f * t to c }
@@ -243,14 +254,45 @@ fun ThinSlider(
             val filled = size.width * fraction * fillFactor
             if (filled > 0f) {
                 val alpha = if (dragging) activeColor.alpha else mixPulse?.alpha(activeColor.alpha) ?: activeColor.alpha
+                val barWidth = filled.coerceAtLeast(size.height * fillFactor).coerceAtMost(size.width)
+                val baseFill = activeColor.copy(alpha = alpha)
+                val tipAccent = lerp(activeColor, accentColor, 0.28f + 0.36f * dragProgress).copy(alpha = alpha)
                 drawRoundRect(
-                    color = activeColor.copy(alpha = alpha),
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(baseFill, tipAccent),
+                        startX = 0f,
+                        endX = barWidth.coerceAtLeast(1f),
+                    ),
                     size = Size(
-                        filled.coerceAtLeast(size.height * fillFactor).coerceAtMost(size.width),
+                        barWidth,
                         size.height,
                     ),
                     cornerRadius = radius,
                 )
+                // Active playhead/thumb highlight integrated with MaterialTheme.colorScheme.primary
+                if (size.width > size.height) {
+                    val halfH = size.height / 2f
+                    val thumbX = (barWidth - halfH).coerceIn(halfH, size.width - halfH)
+                    val thumbCenter = Offset(thumbX, halfH)
+                    if (dragProgress > 0.01f) {
+                        drawCircle(
+                            color = accentColor.copy(alpha = 0.34f * dragProgress * fillFactor),
+                            radius = halfH * (1.45f + 0.35f * dragProgress),
+                            center = thumbCenter,
+                        )
+                        drawCircle(
+                            color = lerp(Color.White, accentColor, 0.35f).copy(alpha = 0.96f * dragProgress * fillFactor),
+                            radius = halfH * 0.78f,
+                            center = thumbCenter,
+                        )
+                    } else if (fillFactor > 0.5f) {
+                        drawCircle(
+                            color = lerp(activeColor, accentColor, 0.45f).copy(alpha = alpha * 0.55f),
+                            radius = halfH * 0.65f,
+                            center = thumbCenter,
+                        )
+                    }
+                }
             }
         }
         // Composed only while switching or mixing. The infinite animation therefore costs no
@@ -270,7 +312,7 @@ fun ThinSlider(
                 ),
             exit = fadeOut(tween(durationMillis = MORPH_MS, easing = FastOutSlowInEasing)),
         ) {
-            MixSheen(height = height, color = activeColor)
+            MixSheen(height = height, color = lerp(activeColor, accentColor, 0.30f))
         }
     }
 }

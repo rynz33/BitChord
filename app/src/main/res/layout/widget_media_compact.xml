@@ -24,7 +24,8 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_preview_art">
+    android:background="@drawable/widget_preview_art"
+    android:clipToOutline="true">
 
     <!--
       fitXY, not centerCrop: the bitmap is composited at the widget's exact pixel

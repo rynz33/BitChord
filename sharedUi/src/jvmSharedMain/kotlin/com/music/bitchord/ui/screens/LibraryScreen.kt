@@ -4,13 +4,16 @@ import com.music.bitchord.sharedui.resources.*
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,12 +21,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import com.music.bitchord.ui.components.ShelfRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -38,6 +43,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -119,6 +127,7 @@ fun LibraryScreen(
 ) {
     val pinnedPlaylists by AppUi.host.pinnedPlaylists.collectAsStateWithLifecycle()
     val onDevice = stringResource(Res.string.on_device)
+    var selectedShelfFilter by remember { mutableStateOf<String?>(null) }
     PullToRefresh(
         refreshing = refreshing,
         onRefresh = onRefresh,
@@ -132,11 +141,8 @@ fun LibraryScreen(
         ) {
             if (showTitle) {
                 item {
-                    Text(
-                        text = stringResource(Res.string.library),
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp),
+                    LibraryHeader(
+                        title = stringResource(Res.string.library),
                     )
                 }
             }
@@ -168,7 +174,7 @@ fun LibraryScreen(
                     )
                 }
                 item {
-                    MessageState(
+                    LibraryEmptyAccentBanner(
                         message = stringResource(Res.string.library_sign_in_description),
                         actionLabel = stringResource(Res.string.sign_in),
                         onAction = onSignIn,
@@ -179,7 +185,11 @@ fun LibraryScreen(
             when (state) {
                 is UiState.Loading -> librarySkeleton()
                 is UiState.Error -> item {
-                    MessageState(state.message, actionLabel = stringResource(Res.string.retry), onAction = onRetry)
+                    LibraryEmptyAccentBanner(
+                        message = state.message,
+                        actionLabel = stringResource(Res.string.retry),
+                        onAction = onRetry,
+                    )
                 }
                 is UiState.Success -> {
                     // A fresh account has no Playlists shelf at all, and that
@@ -187,7 +197,24 @@ fun LibraryScreen(
                     // makes one — so the row is drawn either way, empty but
                     // for the tile that creates the first playlist.
                     val shelves = state.data.shelves
-                    if (shelves.none { it.title == PLAYLISTS }) {
+                    if (shelves.size > 1) {
+                        item(key = "library:filter-chips") {
+                            LibraryFilterChipRow(
+                                shelfTitles = shelves.map { it.title },
+                                selectedTitle = selectedShelfFilter,
+                                onSelectTitle = { clicked ->
+                                    selectedShelfFilter = if (selectedShelfFilter == clicked) null else clicked
+                                },
+                            )
+                        }
+                    }
+                    val activeFilter = selectedShelfFilter
+                    val filteredShelves = if (activeFilter == null || shelves.none { it.title == activeFilter }) {
+                        shelves
+                    } else {
+                        shelves.filter { it.title == activeFilter }
+                    }
+                    if (shelves.none { it.title == PLAYLISTS } && activeFilter == null) {
                         item(key = "shelf:$PLAYLISTS") {
                             val emptyPlaylists = HomeShelf(PLAYLISTS, emptyList())
                             PlaylistShelf(
@@ -200,7 +227,7 @@ fun LibraryScreen(
                             )
                         }
                     }
-                    shelves.forEach { shelf ->
+                    filteredShelves.forEach { shelf ->
                         item(key = "shelf:${shelf.title}") {
                             if (shelf.title == PLAYLISTS) {
                                 val pinnedFirst = shelf.pinnedFirst(pinnedPlaylists)
@@ -229,6 +256,181 @@ fun LibraryScreen(
     }
 }
 
+/**
+ * RynzMusic signature Library screen header: pairs a vertical primary accent
+ * pill bar with the large heading and a dynamic theme-colored badge.
+ */
+@Composable
+private fun LibraryHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = PAGE_GUTTER, vertical = 10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(28.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f), CircleShape)
+                .padding(horizontal = 9.dp, vertical = 3.dp),
+        ) {
+            Text(
+                text = "RYNZ",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/**
+ * Dynamic filter chips for Library shelves, styled with RynzMusic's active
+ * primary pill fill and subtle bordered inactive chips.
+ */
+@Composable
+private fun LibraryFilterChipRow(
+    shelfTitles: List<String>,
+    selectedTitle: String?,
+    onSelectTitle: (String?) -> Unit,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = PAGE_GUTTER),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 14.dp),
+    ) {
+        item(key = "chip:all") {
+            val isAllSelected = selectedTitle == null
+            LibraryFilterChip(
+                label = "All",
+                selected = isAllSelected,
+                onClick = { onSelectTitle(null) },
+            )
+        }
+        items(shelfTitles, key = { "chip:$it" }) { rawTitle ->
+            val selected = selectedTitle == rawTitle
+            LibraryFilterChip(
+                label = localizeShelfTitle(rawTitle),
+                selected = selected,
+                onClick = { onSelectTitle(rawTitle) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LibraryFilterChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val backgroundColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+    }
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(backgroundColor)
+            .border(1.dp, borderColor, CircleShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+    ) {
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimary),
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * Primary-accented empty / sign-in state wrapper for the Library page so the
+ * active RynzMusic multi-theme palette shines even before sign-in.
+ */
+@Composable
+private fun LibraryEmptyAccentBanner(
+    message: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PAGE_GUTTER, vertical = 12.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                shape = RoundedCornerShape(18.dp),
+            )
+            .padding(top = 18.dp, bottom = 6.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+        ) {
+            Icon(
+                imageVector = BitChordIcons.Pin,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        MessageState(
+            message = message,
+            actionLabel = actionLabel,
+            onAction = onAction,
+        )
+    }
+}
+
 /** One of the Library's folder rows: the page [item] opens, behind [icon]. */
 /** [logo], when set, is drawn in place of [icon] — a service's own mark. */
 data class LibraryLink(val item: ShelfItem, val icon: ImageVector, val logo: DrawableResource? = null)
@@ -246,26 +448,34 @@ private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Un
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 54.dp)
+                    .heightIn(min = 56.dp)
                     .clickable { onClick(link.item) }
                     .padding(horizontal = PAGE_GUTTER),
             ) {
-                if (link.logo != null) {
-                    // A mark, not a glyph: white on dark, black on light, with
-                    // its cut-outs left clear.
-                    Icon(
-                        painter = painterResource(link.logo),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(LINK_ICON_SIZE),
-                    )
-                } else {
-                    Icon(
-                        imageVector = link.icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(LINK_ICON_SIZE),
-                    )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(LINK_BADGE_SIZE)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                ) {
+                    if (link.logo != null) {
+                        // A mark, not a glyph: white on dark, black on light, with
+                        // its cut-outs left clear.
+                        Icon(
+                            painter = painterResource(link.logo),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(LINK_ICON_SIZE),
+                        )
+                    } else {
+                        Icon(
+                            imageVector = link.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(LINK_ICON_SIZE),
+                        )
+                    }
                 }
                 Spacer(Modifier.width(LINK_ICON_GAP))
                 Text(
@@ -279,13 +489,13 @@ private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Un
                 Icon(
                     imageVector = BitChordIcons.ChevronRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = .75f),
                     modifier = Modifier.size(20.dp),
                 )
             }
             if (index < links.lastIndex) {
                 HorizontalDivider(
-                    modifier = Modifier.padding(start = PAGE_GUTTER + LINK_ICON_SIZE + LINK_ICON_GAP),
+                    modifier = Modifier.padding(start = PAGE_GUTTER + LINK_BADGE_SIZE + LINK_ICON_GAP),
                     thickness = 0.5.dp,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -294,8 +504,9 @@ private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Un
     }
 }
 
-private val LINK_ICON_SIZE = 24.dp
-private val LINK_ICON_GAP = 16.dp
+private val LINK_BADGE_SIZE = 36.dp
+private val LINK_ICON_SIZE = 20.dp
+private val LINK_ICON_GAP = 14.dp
 
 /**
  * The one shelf on this page that can be written to: it leads with the tile

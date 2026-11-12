@@ -160,6 +160,11 @@ class MediaWidgetPill : AppWidgetProvider() {
                 R.id.widget_toggle,
                 if (snapshot.isPlaying) R.drawable.ic_widget_pause else R.drawable.ic_widget_play,
             )
+            views.setInt(
+                R.id.widget_toggle,
+                "setBackgroundResource",
+                if (snapshot.isPlaying) R.drawable.widget_toggle_on else R.drawable.widget_transport_button,
+            )
             views.setContentDescription(
                 R.id.widget_toggle,
                 context.getString(if (snapshot.isPlaying) R.string.widget_pause else R.string.widget_play),
