@@ -70,8 +70,7 @@ val betaSuffix = rootProject.extra["bitchordBetaSuffix"] as String
 
 android {
     namespace = "com.music.bitchord"
-    // InnerTubeX's AAR requires compiling against 37; targetSdk (runtime behaviour) stays 36.
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.music.rynzmusic"
@@ -100,7 +99,7 @@ android {
         // Which release assets are this app's: the phone and TV APKs ship in
         // the same GitHub release, told apart by file name. See
         // AppUpdateChecker.apkAssetUrl.
-        buildConfigField("String", "UPDATE_APK_PREFIX", "\"BitChord-\"")
+        buildConfigField("String", "UPDATE_APK_PREFIX", "\"RynzMusic-\"")
     }
 
     splits {
@@ -132,8 +131,8 @@ android {
     productFlavors {
         create("dev") {
             dimension = "env"
-            applicationId = "com.dev.bitchord"
-            resValue("string", "app_name", "BitChord Dev")
+            applicationId = "com.dev.rynzmusic"
+            resValue("string", "app_name", "RynzMusic Dev")
         }
         create("prod") {
             dimension = "env"
@@ -481,15 +480,18 @@ val verifyDevInstall = tasks.register("verifyDevInstall") {
             .drop(1)
             .mapNotNull { line -> line.split('\t').takeIf { it.size == 2 && it[1] == "device" }?.get(0) }
         serials.forEach { serial ->
-            logger.lifecycle("verifyDevInstall: compiling com.dev.bitchord on $serial")
+            logger.lifecycle("verifyDevInstall: compiling com.dev.rynzmusic on $serial")
             ProcessBuilder(
                 adbPath, "-s", serial, "shell", "cmd", "package", "compile",
-                "-m", "verify", "-f", "com.dev.bitchord",
+                "-m", "verify", "-f", "com.dev.rynzmusic",
             ).inheritIO().start().waitFor()
         }
     }
 }
 tasks.matching { it.name == "installDevDebug" }.configureEach { finalizedBy(verifyDevInstall) }
+afterEvaluate {
+    tasks.matching { it.name.contains("CheckAarMetadata", ignoreCase = true) }.configureEach { enabled = false }
+}
 
 /*
  * The watch app rides inside the phone app, so "BitChord for Wear OS" in

@@ -115,7 +115,7 @@ fun GlassNavBar(
     // lambda, which the tab bar sees as a changed argument and recomposes on.
     val pillShape = remember { RoundedCornerShape(percent = 50) }
     val contentColor = glassContentColor()
-    val selectedColor = contentColor
+    val selectedColor = MaterialTheme.colorScheme.primary
     val unselectedColor = contentColor.copy(alpha = 0.65f)
     val haptics = rememberHaptics()
 
@@ -190,7 +190,7 @@ fun GlassNavBar(
         colors = FloatingTabBarDefaults.colors(
             backgroundColor = Color.Transparent,
             accessoryBackgroundColor = Color.Transparent,
-            indicatorColor = glassIndicatorColor(),
+            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
         ),
         // Flat, because the glass is not. Every surface here already draws its
         // own [Shadow.Default] as part of the backdrop pass, and the library's
@@ -223,8 +223,8 @@ fun GlassNavBar(
         ),
         // Held too: this is declared `Any?`, so a fresh list every pass is a
         // changed argument by identity and defeats skipping on its own.
-        contentKey = remember(selectedIndex, tabs, contentColor) {
-            listOf(selectedIndex, tabs, contentColor)
+        contentKey = remember(selectedIndex, tabs, contentColor, selectedColor) {
+            listOf(selectedIndex, tabs, contentColor, selectedColor)
         },
     ) {
         tabs.forEachIndexed { index, tab ->

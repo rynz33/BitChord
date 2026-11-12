@@ -219,11 +219,22 @@ private fun ColumnScope.NamePage(
     ) {
         Column {
             Spacer(Modifier.height(56.dp))
-            Image(
-                painter = painterResource(Res.drawable.ic_logo),
-                contentDescription = null,
-                modifier = Modifier.size(width = 46.dp, height = 30.dp),
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.ic_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(width = 44.dp, height = 28.dp),
+                )
+                Text(
+                    text = "RynzMusic",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+            }
         }
     }
     Spacer(Modifier.height(24.dp))

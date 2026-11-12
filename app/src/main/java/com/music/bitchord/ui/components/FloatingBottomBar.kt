@@ -265,7 +265,7 @@ fun FloatingBottomBar(
                     )
                 },
             )
-            .border(GLASS_EDGE_WIDTH, GLASS_EDGE_COLOR, pillShape)
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), pillShape)
             .padding(horizontal = PILL_INSET, vertical = PILL_INSET),
     ) {
         if (tabWidthPx > 0f) {
@@ -284,7 +284,8 @@ fun FloatingBottomBar(
                         scaleY = 1f - lag * STRETCH * SQUASH
                     }
                     .clip(pillShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
+                    .border(0.8.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), pillShape),
             )
         }
 
@@ -348,7 +349,7 @@ fun FloatingBottomBar(
                     tab = tab,
                     selected = index == selectedIndex,
                     glassSpec = glassSpec,
-                    selectedTint = adaptiveTint,
+                    selectedTint = MaterialTheme.colorScheme.primary,
                     unselectedTint = adaptiveTint?.copy(alpha = 0.65f),
                     onClick = { onTabSelected(index) },
                     modifier = Modifier.weight(1f),

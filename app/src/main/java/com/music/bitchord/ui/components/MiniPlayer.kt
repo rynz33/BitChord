@@ -401,7 +401,7 @@ fun MiniPlayer(
                     )
                 },
             )
-            .border(0.5.dp, Color.White.copy(alpha = 0.10f), shape)
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f), shape)
             // Deliberately silent: the whole bar is the target, so it catches
             // stray taps meant for the page behind it, and the sheet rising is
             // its own confirmation. The glyphs on it still buzz.
@@ -470,7 +470,7 @@ fun MiniPlayer(
             if (isLoading) {
                 Box(Modifier.size(GLYPH_SLOT), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onBackground,
+                        color = MaterialTheme.colorScheme.primary,
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(SPINNER_SIZE),
                     )
@@ -481,13 +481,16 @@ fun MiniPlayer(
                         haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
                         onPlayPause()
                     },
-                    modifier = Modifier.size(GLYPH_SLOT),
+                    modifier = Modifier
+                        .size(GLYPH_SLOT)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play),
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(GLYPH_SIZE),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(26.dp),
                     )
                 }
             }
