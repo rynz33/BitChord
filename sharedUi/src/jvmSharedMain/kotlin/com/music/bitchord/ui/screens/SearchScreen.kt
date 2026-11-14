@@ -9,14 +9,12 @@ import androidx.compose.ui.unit.Dp
 import com.music.bitchord.sharedui.resources.*
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import com.music.bitchord.ui.components.PillSegmentedControl
 import com.music.bitchord.ui.components.longPressMenuClickable
@@ -35,7 +33,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -57,10 +54,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,9 +64,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import coil3.compose.AsyncImage
 import com.music.bitchord.data.model.BrowseItem
@@ -215,23 +207,6 @@ fun SearchScreen(
             if (!loadingMore && total > 0 && lastVisible >= total - 4) onLoadMore()
         }
     }
-    var isSearchFocused by remember { mutableStateOf(false) }
-    val searchBorderColor by animateColorAsState(
-        targetValue = when {
-            isSearchFocused -> MaterialTheme.colorScheme.primary
-            query.isNotEmpty() -> MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
-            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-        },
-        label = "searchBorderColor",
-    )
-    val searchGlowColor by animateColorAsState(
-        targetValue = if (isSearchFocused) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-        } else {
-            Color.Transparent
-        },
-        label = "searchGlowColor",
-    )
     Column(modifier = modifier.fillMaxSize()) {
         // Search field and filter tabs stay fixed at the top, outside the
         // scrolling list, so they're always reachable rather than scrolling
@@ -241,39 +216,20 @@ fun SearchScreen(
         // the search field sits cleanly below the bar instead of overlapping it.
         Column(modifier = Modifier.padding(top = topPadding)) {
             if (showField) {
-                SearchHeaderAccentBar(
-                    searchingLibrary = searchingLibrary,
-                    searchingAddons = searchingAddons,
-                    isFocused = isSearchFocused,
+                SearchField(
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    onSubmit = onSubmit,
+                    focusRequester = focusRequester,
+                    placeholder = if (searchingLibrary) {
+                        stringResource(Res.string.search_library_hint)
+                    } else if (searchingAddons) {
+                        stringResource(Res.string.search_addons_hint)
+                    } else {
+                        stringResource(Res.string.search_hint)
+                    },
+                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp),
                 )
-                Box(
-                    modifier = Modifier
-                        .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(searchGlowColor)
-                        .border(
-                            width = if (isSearchFocused) 1.5.dp else 1.dp,
-                            color = searchBorderColor,
-                            shape = RoundedCornerShape(percent = 50),
-                        )
-                        .padding(if (isSearchFocused) 2.dp else 1.dp)
-                        .onFocusChanged { isSearchFocused = it.hasFocus },
-                ) {
-                    SearchField(
-                        query = query,
-                        onQueryChange = onQueryChange,
-                        onSubmit = onSubmit,
-                        focusRequester = focusRequester,
-                        placeholder = if (searchingLibrary) {
-                            stringResource(Res.string.search_library_hint)
-                        } else if (searchingAddons) {
-                            stringResource(Res.string.search_addons_hint)
-                        } else {
-                            stringResource(Res.string.search_hint)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
             }
             if (sourceSwitcher != null) {
                 AnimatedVisibility(
@@ -281,7 +237,7 @@ fun SearchScreen(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
-                    Box(Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp)) {
+                    Box(Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp)) {
                         sourceSwitcher()
                     }
                 }
@@ -290,12 +246,14 @@ fun SearchScreen(
             // they stay up for an empty or failed search too, or picking a filter
             // that finds nothing would take away the control needed to leave it.
             // They are YouTube's categories, so the Library source has none.
+            // The same selector as the sources above it and a folder's tabs, so
+            // the app has one look for "pick one of these".
             if (results != null && !suggesting && !searchingLibrary && !searchingAddons) {
-                SearchFilterChipRow(
-                    filters = SearchFilter.entries,
-                    selectedFilter = filter,
-                    onFilterSelect = onFilterChange,
-                    modifier = Modifier.padding(bottom = 8.dp),
+                PillSegmentedControl(
+                    options = SearchFilter.entries.map { it.label },
+                    selectedIndex = filter.ordinal,
+                    onSelect = { onFilterChange(SearchFilter.entries[it]) },
+                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                 )
             }
         }
@@ -347,7 +305,7 @@ fun SearchScreen(
                     }
                 }
                 results == null -> if (history.isEmpty()) {
-                    item { SearchEmptyAccentState(stringResource(Res.string.search_empty)) }
+                    item { MessageState(stringResource(Res.string.search_empty)) }
                 } else {
                     recentSearches(
                         history = history,
@@ -361,7 +319,7 @@ fun SearchScreen(
                     )
                 }
                 results is UiState.Loading -> songListSkeleton(circular = filter == SearchFilter.ARTISTS)
-                results is UiState.Error -> item { SearchEmptyAccentState(results.message) }
+                results is UiState.Error -> item { MessageState(results.message) }
                 results is UiState.Success -> {
                     val tracks = results.data
                         .mapNotNull { row -> when (row) {
@@ -390,9 +348,16 @@ fun SearchScreen(
                     searchSections(results.data, filter).forEach { section ->
                         section.title?.let { title ->
                             item(key = "search-section:$title") {
-                                SearchSectionHeader(
-                                    title = title,
-                                    count = section.rows.size,
+                                Text(
+                                    text = title,
+                                    modifier = Modifier.padding(
+                                        start = PAGE_GUTTER,
+                                        end = PAGE_GUTTER,
+                                        top = 16.dp,
+                                        bottom = 6.dp,
+                                    ),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
                         }
@@ -447,223 +412,6 @@ fun SearchScreen(
     }
 }
 
-/**
- * RynzMusic signature Search screen header strip: pairs a vertical primary
- * accent bar and two-tone title with an active source pill badge.
- */
-@Composable
-private fun SearchHeaderAccentBar(
-    searchingLibrary: Boolean,
-    searchingAddons: Boolean,
-    isFocused: Boolean,
-) {
-    val modeLabel = when {
-        searchingLibrary -> "LIBRARY"
-        searchingAddons -> "ADDONS"
-        else -> "YOUTUBE"
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .width(3.5.dp)
-                .height(16.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Rynz",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = "Search",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-        }
-        Spacer(Modifier.weight(1f))
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(
-                    MaterialTheme.colorScheme.primary.copy(
-                        alpha = if (isFocused) 0.22f else 0.12f,
-                    ),
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.primary.copy(
-                        alpha = if (isFocused) 0.45f else 0.25f,
-                    ),
-                    shape = RoundedCornerShape(percent = 50),
-                )
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-        ) {
-            Text(
-                text = modeLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-/**
- * Dynamic RynzMusic filter chip strip for Search categories, highlighting the
- * active filter tab pill with [MaterialTheme.colorScheme.primary].
- */
-@Composable
-private fun SearchFilterChipRow(
-    filters: List<SearchFilter>,
-    selectedFilter: SearchFilter,
-    onFilterSelect: (SearchFilter) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = PAGE_GUTTER),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        items(filters, key = { it.name }) { item ->
-            val selected = item == selectedFilter
-            val backgroundColor = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-            }
-            val borderColor = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-            }
-            val textColor = if (selected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(backgroundColor)
-                    .border(1.dp, borderColor, CircleShape)
-                    .clickable { onFilterSelect(item) }
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
-            ) {
-                if (selected) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onPrimary),
-                    )
-                }
-                Text(
-                    text = item.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = textColor,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-/**
- * RynzMusic section header for mixed search result categories.
- */
-@Composable
-private fun SearchSectionHeader(
-    title: String,
-    count: Int,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = PAGE_GUTTER,
-                end = PAGE_GUTTER,
-                top = 18.dp,
-                bottom = 8.dp,
-            ),
-    ) {
-        Box(
-            modifier = Modifier
-                .width(3.5.dp)
-                .height(18.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f),
-        )
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-        ) {
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-/**
- * Primary-accented empty state for Search so all 6 RynzMusic themes shine
- * before a query is entered or when no matches are found.
- */
-@Composable
-private fun SearchEmptyAccentState(message: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = PAGE_GUTTER, vertical = 18.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-                shape = RoundedCornerShape(18.dp),
-            )
-            .padding(top = 20.dp, bottom = 8.dp),
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.32f), CircleShape),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Search,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        MessageState(message)
-    }
-}
-
 private data class SearchSection(val title: String?, val rows: List<SearchResult>)
 
 /** The unfiltered page is useful only when its mixed result types are readable at a glance. */
@@ -703,15 +451,15 @@ private fun LazyListScope.librarySearchResults(
         null -> if (addons && query.isEmpty() && addonHistory.isNotEmpty()) {
             recentAddonSearches(addonHistory, onAddonHistoryClick, onAddonHistoryRemove, onAddonHistoryClear)
         } else item(key = "library:empty") {
-            SearchEmptyAccentState(
+            MessageState(
                 stringResource(if (addons) Res.string.search_addons_empty else Res.string.search_library_empty),
             )
         }
         UiState.Loading -> songListSkeleton(keyPrefix = "skeleton:search:library")
-        is UiState.Error -> item(key = "library:error") { SearchEmptyAccentState(results.message) }
+        is UiState.Error -> item(key = "library:error") { MessageState(results.message) }
         is UiState.Success -> if (results.data.isEmpty()) {
             item(key = "library:no-match") {
-                SearchEmptyAccentState(
+                MessageState(
                     if (addons) {
                         stringResource(Res.string.search_addons_no_results, query)
                     } else {
@@ -771,43 +519,17 @@ private fun TopResultCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, top = 14.dp, bottom = 8.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
-                shape = RoundedCornerShape(16.dp),
-            )
+            .background(MaterialTheme.colorScheme.background)
+            .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, top = 18.dp, bottom = 8.dp)
             .longPressMenuClickable(onClick = onPlay, onLongClick = onLongPress)
-            .contextClick(onLongPress)
-            .padding(16.dp),
+            .contextClick(onLongPress),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(3.5.dp)
-                    .height(14.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = "TOP RESULT",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Top result",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = song.thumbnailUrl?.artworkAt(ROW_ART_PX),
@@ -843,13 +565,7 @@ private fun TopResultCard(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(
                 onClick = onPlay,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ),
-                border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
-                    brush = SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)),
-                ),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
             ) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
@@ -858,11 +574,8 @@ private fun TopResultCard(
             OutlinedButton(
                 onClick = onPlaylist,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-                border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
-                    brush = SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-                ),
             ) {
-                Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(Res.string.playlist_action))
             }
@@ -1097,7 +810,28 @@ private fun LazyListScope.recentSearches(
     onSongSwipe: (Song) -> Unit,
 ) {
     item(key = "recent:header") {
-        RecentSearchesHeader(onClear = onClear)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = PAGE_GUTTER, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.recent_searches),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(Res.string.clear),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .clickable(onClick = onClear)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
     }
     items(history, key = { "recent:${it.id}" }) { entity ->
         // A recent track gets the same menu and swipe as a result row, so it can
@@ -1116,42 +850,6 @@ private fun LazyListScope.recentSearches(
     }
 }
 
-@Composable
-private fun RecentSearchesHeader(onClear: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = PAGE_GUTTER, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .height(22.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            text = stringResource(Res.string.recent_searches),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = stringResource(Res.string.clear),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .clip(RoundedCornerShape(percent = 50))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f), RoundedCornerShape(percent = 50))
-                .clickable(onClick = onClear)
-                .padding(horizontal = 12.dp, vertical = 5.dp),
-        )
-    }
-}
-
 /** The Addons tab's recents: just the words that were searched, no song behind them. */
 private fun LazyListScope.recentAddonSearches(
     history: List<String>,
@@ -1160,7 +858,28 @@ private fun LazyListScope.recentAddonSearches(
     onClear: () -> Unit,
 ) {
     item(key = "addon-recent:header") {
-        RecentSearchesHeader(onClear = onClear)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = PAGE_GUTTER, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.recent_searches),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(Res.string.clear),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .clickable(onClick = onClear)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
     }
     items(history, key = { "addon-recent:$it" }) { term ->
         Row(

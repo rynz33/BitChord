@@ -32,7 +32,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -40,7 +39,6 @@ import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -62,7 +60,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Undo
@@ -71,9 +68,6 @@ import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.MoreHoriz
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.RepeatOne
-import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -110,13 +104,11 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.BlendMode
@@ -128,7 +120,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
@@ -1668,29 +1659,21 @@ fun NowPlayingScreen(
     // layouts end on, and the only thing in the landscape player's left column
     // besides the sleeve.
     val playerActions: @Composable () -> Unit = {
-        RynzActionRowWithIndicators(
+        PlayerActionRow(
             lyricsOpen = lyricsOpen,
             queueOpen = queueOpen,
             shuffleEnabled = shuffleEnabled,
             repeatMode = repeatMode,
             autoplayEnabled = autoplayEnabled,
-        ) {
-            PlayerActionRow(
-                lyricsOpen = lyricsOpen,
-                queueOpen = queueOpen,
-                shuffleEnabled = shuffleEnabled,
-                repeatMode = repeatMode,
-                autoplayEnabled = autoplayEnabled,
-                onToggleLyrics = toggleLyrics,
-                onToggleQueue = toggleQueue,
-                onToggleShuffle = onToggleShuffle,
-                onCycleRepeat = onCycleRepeat,
-                onToggleAutoplay = onToggleAutoplay,
-                onOpenOutput = openAudioOutput,
-                onListenTogether = onListenTogether,
-                onOpenListenTogetherMembers = openListenTogetherMembers,
-            )
-        }
+            onToggleLyrics = toggleLyrics,
+            onToggleQueue = toggleQueue,
+            onToggleShuffle = onToggleShuffle,
+            onCycleRepeat = onCycleRepeat,
+            onToggleAutoplay = onToggleAutoplay,
+            onOpenOutput = openAudioOutput,
+            onListenTogether = onListenTogether,
+            onOpenListenTogetherMembers = openListenTogetherMembers,
+        )
         // Keep the current output caption visible in every state.
         Spacer(Modifier.height(18.dp))
         Box(
@@ -2012,7 +1995,7 @@ fun NowPlayingScreen(
                             onScrub = onScrub,
                             onScrubFinished = onScrubFinished,
                         ) {
-                            RynzQualityBadge(
+                            PlaybackQualityLabel(
                                 song = song,
                                 isLoading = isLoading,
                                 modifier = Modifier
@@ -2208,21 +2191,16 @@ fun NowPlayingScreen(
                             },
                             lyricStrip = if (syncedLyricsEnabled) {
                                 {
-                                    RynzLyricStripRow(
-                                        active = lyricsTranslation.displayedLyrics.isNotEmpty(),
+                                    CurrentLyricStrip(
+                                        lines = lyricsTranslation.displayedLyrics,
+                                        trackKey = song.videoId,
+                                        playhead = lyricsPlayhead,
                                         isPlaying = isPlaying && position.advancing,
-                                    ) {
-                                        CurrentLyricStrip(
-                                            lines = lyricsTranslation.displayedLyrics,
-                                            trackKey = song.videoId,
-                                            playhead = lyricsPlayhead,
-                                            isPlaying = isPlaying && position.advancing,
-                                            durationMs = durationMs,
-                                            lyricsUnavailable = lyricsUnavailable,
-                                            loadingText = lyricsLoadingText,
-                                            onClick = openLyrics,
-                                        )
-                                    }
+                                        durationMs = durationMs,
+                                        lyricsUnavailable = lyricsUnavailable,
+                                        loadingText = lyricsLoadingText,
+                                        onClick = openLyrics,
+                                    )
                                 }
                             } else {
                                 null
@@ -2239,7 +2217,7 @@ fun NowPlayingScreen(
                                     onScrub = onScrub,
                                     onScrubFinished = onScrubFinished,
                                 ) {
-                                    RynzQualityBadge(
+                                    PlaybackQualityLabel(
                                         song = song,
                                         isLoading = isLoading,
                                         modifier = Modifier
@@ -2259,13 +2237,6 @@ fun NowPlayingScreen(
                                     onPlayPause = onPlayPause,
                                     onNext = onNext,
                                     compact = compact,
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                RynzQuickPlaybackModesRow(
-                                    repeatMode = repeatMode,
-                                    onCycleRepeat = onCycleRepeat,
-                                    shuffleEnabled = shuffleEnabled,
-                                    onToggleShuffle = onToggleShuffle,
                                 )
                             },
                             volume = if (hideVolumeBar) {
@@ -2328,33 +2299,26 @@ fun NowPlayingScreen(
                                 // bring it back. Here there is nothing hidden for
                                 // a tap to reveal, and leaving the reveal gesture
                                 // armed would only eat taps meant for the lines.
-                                Box(Modifier.fillMaxSize()) {
-                                    RynzLyricsActiveGlowOverlay(
-                                        active = !lyrics.isNullOrEmpty() && !lyricPicker.picking,
-                                        isPlaying = isPlaying && position.advancing,
-                                        centerFocus = true,
-                                    )
-                                    LyricsPanel(
-                                        lines = lyrics.orEmpty(),
-                                        subLines = lyricsTranslation.subLines,
-                                        trackKey = song.videoId,
-                                        playhead = lyricsPlayhead,
-                                        looking = !lyricsUnavailable,
-                                        isPlaying = isPlaying && position.advancing,
-                                        onSeekToLine = seekToLyric,
-                                        controlsOpen = true,
-                                        onRevealControls = {},
-                                        onHideControls = {},
-                                        translationProgress = particleProgress,
-                                        canPick = lyricsShareEnabled,
-                                        picking = lyricPicker.picking,
-                                        picked = lyricPicker.picks,
-                                        onPickLine = lyricPicker.pick,
-                                        onTogglePick = lyricPicker.toggle,
-                                        centerFocus = true,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                }
+                                LyricsPanel(
+                                    lines = lyrics.orEmpty(),
+                                    subLines = lyricsTranslation.subLines,
+                                    trackKey = song.videoId,
+                                    playhead = lyricsPlayhead,
+                                    looking = !lyricsUnavailable,
+                                    isPlaying = isPlaying && position.advancing,
+                                    onSeekToLine = seekToLyric,
+                                    controlsOpen = true,
+                                    onRevealControls = {},
+                                    onHideControls = {},
+                                    translationProgress = particleProgress,
+                                    canPick = lyricsShareEnabled,
+                                    picking = lyricPicker.picking,
+                                    picked = lyricPicker.picks,
+                                    onPickLine = lyricPicker.pick,
+                                    onTogglePick = lyricPicker.toggle,
+                                    centerFocus = true,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
                             }
                         }
                     },
@@ -2754,13 +2718,7 @@ fun NowPlayingScreen(
                                 .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
                                 .clip(RoundedCornerShape(3.dp))
                                 .additiveChrome(LocalPlayerChrome.current)
-                                .background(
-                                    lerpColor(
-                                        chromeWhite(0.70f),
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
-                                        0.32f,
-                                    ),
-                                ),
+                                .background(chromeWhite(0.70f)),
                         )
                         // [p] is the shared album-to-panel transition. Keeping this in
                         // composition until its final frame gives the caption a real
@@ -2768,12 +2726,11 @@ fun NowPlayingScreen(
                         // entirely once lyrics or the queue owns the player.
                         if (!hideSongStatus) {
                             WhileShown({ !collapseAlmostDone }) {
-                                RynzPlayerHeaderBadge(
+                                PlaybackOriginCaption(
                                     text = playbackOriginText(song, playedBy),
-                                    isPlaying = isPlaying,
-                                    shuffleEnabled = shuffleEnabled,
-                                    repeatMode = repeatMode,
                                     onClick = openPlaybackOrigin,
+                                    textAlign = TextAlign.Center,
+                                    contentPadding = PaddingValues(start = PLAYER_GUTTER, end = PLAYER_GUTTER, bottom = 1.dp),
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .graphicsLayer { alpha = (1f - p()) * spotifyChromeAlpha },
@@ -3899,34 +3856,27 @@ fun NowPlayingScreen(
                                         // there was what made the collapse stutter.
                                         .graphicsLayer { alpha = if (lyricsPanelVisible) panelFade.value else 0f },
                                 ) { particleProgress ->
-                                    Box(Modifier.fillMaxSize()) {
-                                        RynzLyricsActiveGlowOverlay(
-                                            active = !lyrics.isNullOrEmpty() && !lyricPicker.picking,
-                                            isPlaying = isPlaying && position.advancing,
-                                            centerFocus = false,
-                                        )
-                                        LyricsPanel(
-                                            lines = lyrics.orEmpty(),
-                                            subLines = lyricsTranslation.subLines,
-                                            trackKey = song.videoId,
-                                            playhead = lyricsPlayhead,
-                                            looking = !lyricsUnavailable,
-                                            isPlaying = isPlaying && position.advancing,
-                                            active = lyricsPanelVisible,
-                                            onSeekToLine = seekToLyric,
-                                            controlsOpen = lyricsControlsOpen,
-                                            onRevealControls = { lyricsControlsOpen = true },
-                                            onHideControls = { lyricsControlsOpen = false },
-                                            translationProgress = particleProgress,
-                                            onScrollingChange = { lyricsScrolling = it },
-                                            canPick = lyricsShareEnabled,
-                                            picking = lyricPicker.picking,
-                                            picked = lyricPicker.picks,
-                                            onPickLine = lyricPicker.pick,
-                                            onTogglePick = lyricPicker.toggle,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-                                    }
+                                    LyricsPanel(
+                                        lines = lyrics.orEmpty(),
+                                        subLines = lyricsTranslation.subLines,
+                                        trackKey = song.videoId,
+                                        playhead = lyricsPlayhead,
+                                        looking = !lyricsUnavailable,
+                                        isPlaying = isPlaying && position.advancing,
+                                        active = lyricsPanelVisible,
+                                        onSeekToLine = seekToLyric,
+                                        controlsOpen = lyricsControlsOpen,
+                                        onRevealControls = { lyricsControlsOpen = true },
+                                        onHideControls = { lyricsControlsOpen = false },
+                                        translationProgress = particleProgress,
+                                        onScrollingChange = { lyricsScrolling = it },
+                                        canPick = lyricsShareEnabled,
+                                        picking = lyricPicker.picking,
+                                        picked = lyricPicker.picks,
+                                        onPickLine = lyricPicker.pick,
+                                        onTogglePick = lyricPicker.toggle,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
                                 }
 
                             // Floated over the foot of the lyrics rather than placed in
@@ -4110,25 +4060,20 @@ fun NowPlayingScreen(
                         contentAlignment = Alignment.CenterStart,
                     ) {
                     if (!lyricsOpen && syncedLyricsEnabled) {
-                        RynzLyricStripRow(
-                            active = lyricsTranslation.displayedLyrics.isNotEmpty(),
+                        CurrentLyricStrip(
+                            lines = lyricsTranslation.displayedLyrics,
+                            trackKey = song.videoId,
+                            playhead = lyricsPlayhead,
                             isPlaying = isPlaying && position.advancing,
-                        ) {
-                            CurrentLyricStrip(
-                                lines = lyricsTranslation.displayedLyrics,
-                                trackKey = song.videoId,
-                                playhead = lyricsPlayhead,
-                                isPlaying = isPlaying && position.advancing,
-                                durationMs = durationMs,
-                                lyricsUnavailable = lyricsUnavailable,
-                                loadingText = lyricsLoadingText,
-                                // Still visible over the queue, so still a valid way in:
-                                // opens the same full lyrics panel it always has, closing
-                                // the queue behind it the same way the "Up next" glyph
-                                // closes lyrics behind the queue.
-                                onClick = openLyrics,
-                            )
-                        }
+                            durationMs = durationMs,
+                            lyricsUnavailable = lyricsUnavailable,
+                            loadingText = lyricsLoadingText,
+                            // Still visible over the queue, so still a valid way in:
+                            // opens the same full lyrics panel it always has, closing
+                            // the queue behind it the same way the "Up next" glyph
+                            // closes lyrics behind the queue.
+                            onClick = openLyrics,
+                        )
                     }
                     if (!lyricsOpen && !syncedLyricsEnabled) {
                         Text(
@@ -4142,19 +4087,14 @@ fun NowPlayingScreen(
                         )
                     }
                     if (lyricsOpen) {
-                        RynzLyricStripRow(
-                            active = !lyrics.isNullOrEmpty(),
-                            isPlaying = isPlaying && position.advancing,
-                        ) {
-                            LyricsStatusWithChange(
-                                status = lyricsTranslation.status,
-                                onStatusClick = { showLyricsProviders = true },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(y = 6.dp)
-                                    .padding(vertical = 4.dp),
-                            )
-                        }
+                        LyricsStatusWithChange(
+                            status = lyricsTranslation.status,
+                            onStatusClick = { showLyricsProviders = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .offset(y = 6.dp)
+                                .padding(vertical = 4.dp),
+                        )
                     }
                     }
                     val transitionWindow by PlayerSettings.smartTransitionWindow.collectAsStateWithLifecycle()
@@ -4173,7 +4113,7 @@ fun NowPlayingScreen(
                         onScrub = onScrub,
                         onScrubFinished = onScrubFinished,
                     ) {
-                        RynzQualityBadge(
+                        PlaybackQualityLabel(
                             song = song,
                             isLoading = isLoading,
                             modifier = Modifier
@@ -4203,14 +4143,7 @@ fun NowPlayingScreen(
                         // under the seek bar.
                         Spacer(Modifier.height(8.dp + controlSpread / 2))
                         transport()
-                        Spacer(Modifier.height(8.dp + controlSpread / 4))
-                        RynzQuickPlaybackModesRow(
-                            repeatMode = repeatMode,
-                            onCycleRepeat = onCycleRepeat,
-                            shuffleEnabled = shuffleEnabled,
-                            onToggleShuffle = onToggleShuffle,
-                        )
-                        Spacer(Modifier.height(8.dp + controlSpread / 4))
+                        Spacer(Modifier.height(12.dp + controlSpread / 2))
                         VolumeRow(
                             value = { volume.level.value },
                             onValueChange = onVolumeChange,
@@ -4229,16 +4162,9 @@ fun NowPlayingScreen(
                         // from the top gap to the bottom one.
                         val run = 8.dp + 12.dp + 6.dp + controlSpread + VOLUME_ROW_HEIGHT
                         val lift = SCRUBBER_LABEL_LIFT / 2
-                        Spacer(Modifier.height((run / 2 - lift) / 2))
+                        Spacer(Modifier.height(run / 2 - lift))
                         transport()
-                        Spacer(Modifier.height(10.dp))
-                        RynzQuickPlaybackModesRow(
-                            repeatMode = repeatMode,
-                            onCycleRepeat = onCycleRepeat,
-                            shuffleEnabled = shuffleEnabled,
-                            onToggleShuffle = onToggleShuffle,
-                        )
-                        Spacer(Modifier.height((run / 2 + lift) / 2))
+                        Spacer(Modifier.height(run / 2 + lift))
                     }
 
                     playerActions()
@@ -4319,441 +4245,4 @@ private suspend fun AwaitPointerEventScope.dragQueueIn(
     }
     onHold(false)
     onSettle(open)
-}
-
-/**
- * RynzMusic signature header accent & playback origin badge in the full-screen player's top strip.
- * Combines a dynamic [MaterialTheme.colorScheme.primary] status dot/bar and active shuffle/repeat
- * mini-indicators with the clickable [PlaybackOriginCaption] while respecting artwork colors.
- */
-@Composable
-private fun RynzPlayerHeaderBadge(
-    text: String,
-    isPlaying: Boolean,
-    shuffleEnabled: Boolean,
-    repeatMode: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val dotAlpha by animateFloatAsState(
-        targetValue = if (isPlaying) 0.95f else 0.48f,
-        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-        label = "rynzHeaderDotAlpha",
-    )
-    Row(
-        modifier = modifier.padding(horizontal = PLAYER_GUTTER),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .width(10.dp)
-                .height(3.5.dp)
-                .clip(CircleShape)
-                .background(primaryColor.copy(alpha = dotAlpha)),
-        )
-        Spacer(Modifier.width(6.dp))
-        PlaybackOriginCaption(
-            text = text,
-            onClick = onClick,
-            textAlign = TextAlign.Center,
-            contentPadding = PaddingValues(bottom = 1.dp),
-            modifier = Modifier.widthIn(max = 240.dp),
-        )
-        if (shuffleEnabled || repeatMode != RepeatModes.OFF) {
-            Spacer(Modifier.width(6.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                if (shuffleEnabled) {
-                    Box(
-                        modifier = Modifier
-                            .size(4.5.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.90f)),
-                    )
-                }
-                if (repeatMode != RepeatModes.OFF) {
-                    Box(
-                        modifier = Modifier
-                            .width(if (repeatMode == RepeatModes.ONE) 8.dp else 4.5.dp)
-                            .height(4.5.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.90f)),
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Wraps [PlaybackQualityLabel] with a sleek [MaterialTheme.colorScheme.primary]-tinted pill
- * and border highlight when an active audio quality or lossless badge is present, collapsing
- * to 0x0 when empty so standard tracks have zero extra footprint.
- */
-@Composable
-private fun RynzQualityBadge(
-    song: Song,
-    isLoading: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    Box(
-        modifier = modifier
-            .layout { measurable, constraints ->
-                val padX = 7.dp.roundToPx()
-                val padY = 2.dp.roundToPx()
-                val placeable = measurable.measure(constraints.offset(-padX * 2, -padY * 2))
-                if (placeable.width == 0 || placeable.height == 0) {
-                    layout(0, 0) {}
-                } else {
-                    layout(placeable.width + padX * 2, placeable.height + padY * 2) {
-                        placeable.placeRelative(padX, padY)
-                    }
-                }
-            }
-            .drawBehind {
-                if (size.width > 0f && size.height > 0f) {
-                    val radius = CornerRadius(size.height / 2f)
-                    drawRoundRect(
-                        color = primaryColor.copy(alpha = 0.16f),
-                        cornerRadius = radius,
-                    )
-                    drawRoundRect(
-                        color = primaryColor.copy(alpha = 0.36f),
-                        cornerRadius = radius,
-                        style = Stroke(width = 1.dp.toPx()),
-                    )
-                }
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        PlaybackQualityLabel(
-            song = song,
-            isLoading = isLoading,
-        )
-    }
-}
-
-/**
- * Highlights active bottom action states (Lyrics, Queue, and Shuffle / Repeat / Autoplay capsule
- * segments) with glowing [MaterialTheme.colorScheme.primary] indicator pills/dots.
- */
-@Composable
-private fun RynzActionRowWithIndicators(
-    lyricsOpen: Boolean,
-    queueOpen: Boolean,
-    shuffleEnabled: Boolean,
-    repeatMode: Int,
-    autoplayEnabled: Boolean,
-    content: @Composable () -> Unit,
-) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center,
-    ) {
-        content()
-        if (queueOpen) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(49.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RynzModeIndicatorPill(active = shuffleEnabled, color = primaryColor)
-                RynzModeIndicatorPill(active = repeatMode != RepeatModes.OFF, color = primaryColor)
-                RynzModeIndicatorPill(active = autoplayEnabled, color = primaryColor)
-            }
-        } else if (shuffleEnabled || repeatMode != RepeatModes.OFF) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (shuffleEnabled) {
-                    Box(
-                        modifier = Modifier
-                            .width(10.dp)
-                            .height(2.5.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.85f)),
-                    )
-                }
-                if (repeatMode != RepeatModes.OFF) {
-                    Box(
-                        modifier = Modifier
-                            .width(10.dp)
-                            .height(2.5.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.85f)),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RynzModeIndicatorPill(
-    active: Boolean,
-    color: Color,
-) {
-    val alpha by animateFloatAsState(
-        targetValue = if (active) 0.95f else 0f,
-        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-        label = "rynzModePillAlpha",
-    )
-    Box(
-        modifier = Modifier
-            .width(16.dp)
-            .height(3.dp)
-            .graphicsLayer { this.alpha = alpha }
-            .clip(CircleShape)
-            .background(color),
-    )
-}
-
-/**
- * Adds a sleek [MaterialTheme.colorScheme.primary] active lyric accent pill and subtle glow
- * ahead of the compact lyric strip and lyrics provider status line.
- */
-@Composable
-private fun RynzLyricStripRow(
-    active: Boolean,
-    isPlaying: Boolean,
-    content: @Composable () -> Unit,
-) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val accentAlpha by animateFloatAsState(
-        targetValue = when {
-            !active -> 0f
-            isPlaying -> 0.92f
-            else -> 0.50f
-        },
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "rynzLyricStripAccent",
-    )
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (accentAlpha > 0.01f) {
-            Box(
-                modifier = Modifier
-                    .offset(y = 6.dp)
-                    .width(3.dp)
-                    .height(14.dp)
-                    .graphicsLayer { alpha = accentAlpha }
-                    .clip(CircleShape)
-                    .background(primaryColor),
-            )
-            Spacer(Modifier.width(7.dp))
-        }
-        Box(Modifier.weight(1f)) {
-            content()
-        }
-    }
-}
-
-/**
- * Ambient active lyrics line glow & left-edge accent pill in the full-screen lyrics panel,
- * integrating [MaterialTheme.colorScheme.primary] while preserving artwork palette legibility.
- */
-@Composable
-private fun RynzLyricsActiveGlowOverlay(
-    active: Boolean,
-    isPlaying: Boolean,
-    centerFocus: Boolean,
-) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val glowAlpha by animateFloatAsState(
-        targetValue = when {
-            !active -> 0f
-            isPlaying -> 1f
-            else -> 0.45f
-        },
-        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-        label = "rynzLyricsActiveGlow",
-    )
-    if (glowAlpha <= 0.01f) return
-    val focusFraction = if (centerFocus) 0.46f else 0.24f
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .drawBehind {
-                val focusY = size.height * focusFraction
-                val bandHalfHeight = 56.dp.toPx()
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            primaryColor.copy(alpha = 0.09f * glowAlpha),
-                            Color.Transparent,
-                        ),
-                        startY = (focusY - bandHalfHeight).coerceAtLeast(0f),
-                        endY = (focusY + bandHalfHeight).coerceAtMost(size.height),
-                    ),
-                )
-                val pillWidth = 3.dp.toPx()
-                val pillHeight = 26.dp.toPx()
-                drawRoundRect(
-                    color = primaryColor.copy(alpha = 0.78f * glowAlpha),
-                    topLeft = Offset(0f, (focusY - pillHeight / 2f).coerceAtLeast(0f)),
-                    size = Size(pillWidth, pillHeight),
-                    cornerRadius = CornerRadius(pillWidth / 2f, pillWidth / 2f),
-                )
-            },
-    )
-}
-
-/**
- * Prominent, directly accessible Repeat Mode (Mode Ulang Lagu) control for the main Now Playing screen.
- * Cycles Off -> Repeat All -> Repeat One -> Off on tap, with distinct icons (Repeat / RepeatOne),
- * dynamic [MaterialTheme.colorScheme.primary] active indicator pill, and status labels.
- */
-@Composable
-internal fun RynzRepeatModeButton(
-    repeatMode: Int,
-    onCycleRepeat: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val haptics = rememberHaptics()
-    val isOff = repeatMode == RepeatModes.OFF
-    val isOne = repeatMode == RepeatModes.ONE
-    val primary = MaterialTheme.colorScheme.primary
-
-    val label = when (repeatMode) {
-        RepeatModes.ONE -> "Repeat 1"
-        RepeatModes.ALL -> "Repeat All"
-        else -> "Repeat Off"
-    }
-
-    val icon = if (isOne) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat
-
-    val activeColor = if (!isOff) primary else chromeWhite(0.70f)
-    val bgColor = if (!isOff) primary.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.08f)
-    val borderColor = if (!isOff) primary.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.14f)
-
-    Row(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(bgColor)
-            .border(1.dp, borderColor, CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) {
-                val nextHaptic = when (repeatMode) {
-                    RepeatModes.OFF -> Haptic.ToggleOn
-                    RepeatModes.ALL -> Haptic.Select
-                    else -> Haptic.ToggleOff
-                }
-                haptics.play(nextHaptic)
-                onCycleRepeat()
-            }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = activeColor,
-            modifier = Modifier.size(17.dp),
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = if (!isOff) FontWeight.Bold else FontWeight.Medium,
-                fontSize = 12.sp,
-            ),
-            color = activeColor,
-            maxLines = 1,
-        )
-        if (!isOff) {
-            Spacer(Modifier.width(5.dp))
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(primary),
-            )
-        }
-    }
-}
-
-/**
- * Dedicated Quick Playback Modes row (Repeat Mode + Shuffle Mode) on the main player screen.
- */
-@Composable
-internal fun RynzQuickPlaybackModesRow(
-    repeatMode: Int,
-    onCycleRepeat: () -> Unit,
-    shuffleEnabled: Boolean,
-    onToggleShuffle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val haptics = rememberHaptics()
-    val primary = MaterialTheme.colorScheme.primary
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RynzRepeatModeButton(
-            repeatMode = repeatMode,
-            onCycleRepeat = onCycleRepeat,
-        )
-        Spacer(Modifier.width(10.dp))
-        Row(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(if (shuffleEnabled) primary.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.08f))
-                .border(1.dp, if (shuffleEnabled) primary.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.14f), CircleShape)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) {
-                    haptics.play(if (shuffleEnabled) Haptic.ToggleOff else Haptic.ToggleOn)
-                    onToggleShuffle()
-                }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Shuffle,
-                contentDescription = if (shuffleEnabled) "Shuffle On" else "Shuffle Off",
-                tint = if (shuffleEnabled) primary else chromeWhite(0.70f),
-                modifier = Modifier.size(17.dp),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = if (shuffleEnabled) "Shuffle On" else "Shuffle",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = if (shuffleEnabled) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 12.sp,
-                ),
-                color = if (shuffleEnabled) primary else chromeWhite(0.70f),
-                maxLines = 1,
-            )
-            if (shuffleEnabled) {
-                Spacer(Modifier.width(5.dp))
-                Box(
-                    modifier = Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(primary),
-                )
-            }
-        }
-    }
 }

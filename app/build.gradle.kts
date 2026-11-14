@@ -70,7 +70,7 @@ val betaSuffix = rootProject.extra["bitchordBetaSuffix"] as String
 
 android {
     namespace = "com.music.bitchord"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.music.rynzmusic"
@@ -489,9 +489,6 @@ val verifyDevInstall = tasks.register("verifyDevInstall") {
     }
 }
 tasks.matching { it.name == "installDevDebug" }.configureEach { finalizedBy(verifyDevInstall) }
-afterEvaluate {
-    tasks.matching { it.name.contains("CheckAarMetadata", ignoreCase = true) }.configureEach { enabled = false }
-}
 
 /*
  * The watch app rides inside the phone app, so "BitChord for Wear OS" in

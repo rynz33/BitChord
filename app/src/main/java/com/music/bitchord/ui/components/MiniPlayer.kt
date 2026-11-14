@@ -5,25 +5,17 @@ import com.music.bitchord.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -461,28 +453,14 @@ fun MiniPlayer(
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 // The badge in the artist line's colour and a long line faded
-                // out at its end, as on the glass bar's mini player, paired with
-                // RynzMusic's live 4-bar equalizer wave when playing.
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (isPlaying) {
-                        MiniPlayerEqualizer(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 6.dp),
-                        )
-                    }
-                    Box(Modifier.weight(1f)) {
-                        ExplicitSongTitle(
-                            song = song,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            badgeColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fadeOverflow = true,
-                        )
-                    }
-                }
+                // out at its end, as on the glass bar's mini player.
+                ExplicitSongTitle(
+                    song = song,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    badgeColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fadeOverflow = true,
+                )
                 FadingLine(
                     text = song.artist,
                     style = MaterialTheme.typography.bodyMedium,
@@ -554,72 +532,6 @@ internal fun MiniPlayerNextGlyph(tint: Color) {
             .size(NEXT_GLYPH_SIZE)
             .graphicsLayer { scaleY = 0.85f },
     )
-}
-
-/**
- * Sleek 4-bar live audio equalizer wave indicator shown next to the active track title
- * in RynzMusic's mini player when playback is active.
- */
-@Composable
-private fun MiniPlayerEqualizer(
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    val transition = rememberInfiniteTransition(label = "rynzMiniEq")
-    val bar1 by transition.animateFloat(
-        initialValue = 0.28f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 420, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "eqBar1",
-    )
-    val bar2 by transition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 0.22f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 360, delayMillis = 90, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "eqBar2",
-    )
-    val bar3 by transition.animateFloat(
-        initialValue = 0.40f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 480, delayMillis = 45, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "eqBar3",
-    )
-    val bar4 by transition.animateFloat(
-        initialValue = 0.70f,
-        targetValue = 0.30f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 390, delayMillis = 130, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "eqBar4",
-    )
-    val heights = floatArrayOf(bar1, bar2, bar3, bar4)
-    val maxBarHeight = 13.dp
-    val barShape = RoundedCornerShape(percent = 50)
-    Row(
-        modifier = modifier.height(maxBarHeight),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        for (fraction in heights) {
-            Box(
-                modifier = Modifier
-                    .width(2.5.dp)
-                    .height(maxBarHeight * fraction)
-                    .clip(barShape)
-                    .background(color),
-            )
-        }
-    }
 }
 
 private val NEXT_GLYPH_SIZE = 25.dp

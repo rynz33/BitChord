@@ -469,37 +469,29 @@ private fun HomeTitle(
     onFestiveLogoClick: (() -> Unit)? = null,
 ) {
     val style = MaterialTheme.typography.displayLarge
-    val logoHeight = with(LocalDensity.current) { (style.fontSize * 0.72f).toDp() }
-    Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 10.dp)) {
+    val logoHeight = with(LocalDensity.current) { (style.fontSize * 0.78f).toDp() }
+    Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(bottom = 12.dp),
+            modifier = Modifier.padding(bottom = 10.dp),
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-            ) {
-                val logoModifier = Modifier
-                    .height(logoHeight)
-                    .aspectRatio(LOGO_ASPECT)
-                if (festiveLogo) {
-                    GoldenLogo(
-                        painter = painterResource(Res.drawable.ic_logo),
-                        modifier = logoModifier,
-                        onClick = onFestiveLogoClick,
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_logo),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = logoModifier,
-                    )
-                }
+            val logoModifier = Modifier
+                .height(logoHeight)
+                .aspectRatio(LOGO_ASPECT)
+            if (festiveLogo) {
+                GoldenLogo(
+                    painter = painterResource(Res.drawable.ic_logo),
+                    modifier = logoModifier,
+                    onClick = onFestiveLogoClick,
+                )
+            } else {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_logo),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = logoModifier,
+                )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -511,18 +503,6 @@ private fun HomeTitle(
                     text = "Music",
                     style = style,
                     color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = "HI-RES",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -548,18 +528,10 @@ internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() 
     val displaySubtitle = localizeShelfSubtitle(subtitle)
     Row(
         modifier = Modifier
-            .padding(horizontal = PAGE_GUTTER, vertical = 10.dp)
+            .padding(horizontal = PAGE_GUTTER, vertical = 8.dp)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .width(3.5.dp)
-                .height(18.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-        )
-        Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = displayTitle,
