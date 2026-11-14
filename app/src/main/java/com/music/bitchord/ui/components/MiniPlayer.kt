@@ -417,57 +417,8 @@ fun MiniPlayer(
                 ambientColor = Color.Black.copy(alpha = 0.30f),
             )
             .clip(shape)
-            .then(
-                if (reduceDynamicBlur) {
-                    Modifier.background(MaterialTheme.colorScheme.surface)
-                } else {
-                    Modifier
-                        .optimizedHazeEffect(
-                            state = hazeState,
-                            style = HazeMaterials.ultraThin(MaterialTheme.colorScheme.surface),
-                        )
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.14f),
-                                    Color.White.copy(alpha = 0.04f),
-                                ),
-                            ),
-                        )
-                },
-            )
-            // Subtle translucent white/theme glass border (0.8.dp, 12-18% alpha)
-            .border(
-                width = 0.8.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.18f),
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                        Color.White.copy(alpha = 0.12f),
-                    ),
-                ),
-                shape = shape,
-            )
-            // Dynamic ambient glass sheen
-            .drawWithContent {
-                drawContent()
-                val sheenWidth = size.width * 0.32f
-                val startX = sheenPhase * size.width - sheenWidth / 2f
-                drawRoundRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.05f),
-                            Color.White.copy(alpha = 0.14f),
-                            Color.Transparent,
-                        ),
-                        start = Offset(startX, 0f),
-                        end = Offset(startX + sheenWidth, size.height),
-                    ),
-                    size = size,
-                    cornerRadius = CornerRadius(size.height / 2f),
-                )
-            }
+            .background(Color(0xFF0C0C0E))
+            .border(2.dp, Color(0xFFE60012), shape)
             .clickable(onClick = onExpand),
     ) {
         Row(
@@ -549,35 +500,13 @@ fun MiniPlayer(
                     )
                 }
             } else {
-                // Floating capsule play/pause button with soft depth and glass fill
+                // Persona 5 solid red play/pause button
                 Box(
                     modifier = Modifier
                         .size(GLYPH_SLOT)
-                        .shadow(
-                            elevation = 4.dp,
-                            shape = CircleShape,
-                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                            ambientColor = Color.Black.copy(alpha = 0.25f),
-                        )
                         .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.22f),
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
-                                ),
-                            ),
-                        )
-                        .border(
-                            width = 0.8.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.28f),
-                                    Color.White.copy(alpha = 0.12f),
-                                ),
-                            ),
-                            shape = CircleShape,
-                        )
+                        .background(Color(0xFFE60012))
+                        .border(1.5.dp, Color.White, CircleShape)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -590,8 +519,8 @@ fun MiniPlayer(
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(26.dp),
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }

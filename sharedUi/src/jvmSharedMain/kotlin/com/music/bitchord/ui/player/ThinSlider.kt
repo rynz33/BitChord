@@ -298,88 +298,32 @@ fun ThinSlider(
                 val alpha = if (dragging) activeColor.alpha else mixPulse?.alpha(activeColor.alpha) ?: activeColor.alpha
                 val fillWidth = filled.coerceAtLeast(size.height * fillFactor).coerceAtMost(size.width)
 
-                // Luminous glass progress fill
+                // Persona 5 solid vibrant red progress fill
                 drawRoundRect(
-                    brush = Brush.horizontalGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.85f * alpha),
-                            activeColor.copy(alpha = alpha),
-                        ),
-                        startX = 0f,
-                        endX = fillWidth,
-                    ),
-                    size = Size(fillWidth, size.height),
-                    cornerRadius = radius,
-                )
-                // Top inner glass reflection across progress fill
-                drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        0f to Color.White.copy(alpha = 0.32f * alpha),
-                        0.5f to Color.Transparent,
-                    ),
+                    color = Color(0xFFE60012).copy(alpha = alpha),
                     size = Size(fillWidth, size.height),
                     cornerRadius = radius,
                 )
             }
 
-            // Sleek modern scrubber with luminous glass playhead
+            // Persona 5 scrubber with stark white playhead & crimson border
             if (fillFactor > 0f && fraction > 0f) {
                 val playheadX = (size.width * fraction * fillFactor).coerceIn(size.height / 2f, size.width - size.height / 2f)
                 val centerY = size.height / 2f
                 val baseHeadRadius = size.height / 2f
-                val playheadRadius = baseHeadRadius + 0.8.dp.toPx() + 3.2.dp.toPx() * playheadExpansion
-                val haloRadius = playheadRadius + 5.dp.toPx() + 6.dp.toPx() * playheadExpansion
+                val playheadRadius = baseHeadRadius + 1.dp.toPx() + 3.dp.toPx() * playheadExpansion
 
-                // 1. Luminous outer halo glow
+                // Stark white thumb with red border
                 drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.36f * (0.65f + 0.35f * playheadExpansion)),
-                            Color.White.copy(alpha = 0.10f * (0.65f + 0.35f * playheadExpansion)),
-                            Color.Transparent,
-                        ),
-                        center = Offset(playheadX, centerY),
-                        radius = haloRadius,
-                    ),
-                    radius = haloRadius,
-                    center = Offset(playheadX, centerY),
-                )
-
-                // 2. Translucent glass playhead body with soft depth
-                drawCircle(
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            Color.White,
-                            Color.White.copy(alpha = 0.88f),
-                        ),
-                        startY = centerY - playheadRadius,
-                        endY = centerY + playheadRadius,
-                    ),
+                    color = Color.White,
                     radius = playheadRadius,
                     center = Offset(playheadX, centerY),
                 )
-
-                // 3. Crisp translucent glass rim border (0.8.dp, 16-45% alpha)
                 drawCircle(
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.45f),
-                            Color.White.copy(alpha = 0.18f),
-                        ),
-                        startY = centerY - playheadRadius,
-                        endY = centerY + playheadRadius,
-                    ),
+                    color = Color(0xFFE60012),
                     radius = playheadRadius,
                     center = Offset(playheadX, centerY),
-                    style = Stroke(width = 0.8.dp.toPx()),
-                )
-
-                // 4. Specular liquid glass reflection core
-                val coreRadius = playheadRadius * 0.36f
-                drawCircle(
-                    color = Color.White.copy(alpha = 0.95f),
-                    radius = coreRadius,
-                    center = Offset(playheadX, centerY - playheadRadius * 0.2f),
+                    style = Stroke(width = 2.dp.toPx()),
                 )
             }
         }

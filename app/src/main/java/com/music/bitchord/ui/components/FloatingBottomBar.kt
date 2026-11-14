@@ -261,18 +261,17 @@ fun FloatingBottomBar(
         ),
     )
 
-    // Subtle luminous glass indicator styling
+    // Persona 5 style solid red active capsule
     val indicatorFill = Brush.verticalGradient(
         colors = listOf(
-            primaryColor.copy(alpha = if (isDark) 0.28f else 0.22f),
-            primaryColor.copy(alpha = if (isDark) 0.14f else 0.10f),
+            primaryColor,
+            primaryColor.copy(alpha = 0.92f),
         ),
     )
     val indicatorBorder = Brush.verticalGradient(
         colors = listOf(
-            Color.White.copy(alpha = if (isDark) 0.55f else 0.65f),
-            primaryColor.copy(alpha = 0.50f),
-            Color.White.copy(alpha = if (isDark) 0.18f else 0.25f),
+            Color.White,
+            Color.White.copy(alpha = 0.85f),
         ),
     )
 
@@ -283,30 +282,8 @@ fun FloatingBottomBar(
             .padding(bottom = NAV_BAR_LIFT)
             .fillMaxWidth()
             .clip(pillShape)
-            .then(
-                if (reduceDynamicBlur) {
-                    Modifier.background(container)
-                } else if (useGlass) {
-                    Modifier.liquidGlass(shape = pillShape)
-                } else {
-                    Modifier
-                        .optimizedHazeEffect(
-                            state = hazeState,
-                            style = HazeMaterials.regular(container),
-                        )
-                        .background(container.copy(alpha = 0.70f))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = if (isDark) 0.08f else 0.15f),
-                                    Color.Transparent,
-                                    Color.White.copy(alpha = if (isDark) 0.02f else 0.05f),
-                                )
-                            )
-                        )
-                },
-            )
-            .border(0.8.dp, glassBorderBrush, pillShape)
+            .background(Color(0xFF0C0C0E))
+            .border(2.dp, primaryColor, pillShape)
             .padding(horizontal = PILL_INSET, vertical = PILL_INSET),
     ) {
         if (tabWidthPx > 0f) {
@@ -421,8 +398,8 @@ fun FloatingBottomBar(
                     tab = tab,
                     selected = index == selectedIndex,
                     glassSpec = glassSpec,
-                    selectedTint = MaterialTheme.colorScheme.primary,
-                    unselectedTint = adaptiveTint?.copy(alpha = 0.65f),
+                    selectedTint = Color.White,
+                    unselectedTint = Color.White.copy(alpha = 0.65f),
                     onClick = { onTabSelected(index) },
                     modifier = Modifier.weight(1f),
                 )

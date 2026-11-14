@@ -66,6 +66,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -139,54 +140,29 @@ fun FloatingFrostedSearchBar(
         ),
     )
 
+    val p5BarShape = RoundedCornerShape(6.dp)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .shadow(
-                elevation = 5.dp,
-                shape = CircleShape,
-                ambientColor = Color.Black.copy(alpha = 0.20f),
-                spotColor = Color.Black.copy(alpha = 0.30f),
-            )
-            .clip(CircleShape)
-            .background(glassFill)
-            .border(width = 0.8.dp, brush = glassBorderBrush, shape = CircleShape)
-            .drawWithContent {
-                drawContent()
-                // Top ambient specular sheen
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = if (isLight) 0.18f else 0.09f), Color.Transparent),
-                        startY = 0f,
-                        endY = 32f,
-                    ),
-                )
-            }
+            .clip(p5BarShape)
+            .background(Color(0xFF101014))
+            .border(width = 2.dp, color = Color(0xFFE60012), shape = p5BarShape)
             .padding(start = 7.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .clip(CircleShape)
-                .background(
-                    if (query.isNotBlank()) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    else Color.White.copy(alpha = if (isLight) 0.20f else 0.07f),
-                )
-                .border(
-                    width = 0.5.dp,
-                    color = if (query.isNotBlank()) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                    else Color.White.copy(alpha = 0.15f),
-                    shape = CircleShape,
-                )
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFFE60012))
                 .clickable(enabled = query.isNotBlank(), onClick = submit),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = stringResource(Res.string.search),
-                tint = if (query.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Color.White,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -365,6 +341,73 @@ fun SearchScreen(
         // away with the results or recent searches beneath them.
         Column(modifier = Modifier.padding(top = topPadding)) {
             if (showField) {
+                // P5 Top Section Tag
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .graphicsLayer { rotationZ = -2f }
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFFE60012))
+                            .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = "02",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                            color = Color.White,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black)
+                            .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 9.dp, vertical = 3.dp),
+                    ) {
+                        Text(
+                            text = "SEARCH // MEMENTOS",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                            color = Color.White,
+                        )
+                    }
+                }
+                // P5 Radar Scan Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 8.dp),
+                ) {
+                    "RADAR SCAN".split(" ").forEachIndexed { wordIdx, word ->
+                        if (wordIdx > 0) Spacer(Modifier.width(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            word.forEachIndexed { charIdx, char ->
+                                val isRed = (charIdx + wordIdx) % 2 == 1
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(if (isRed) Color(0xFFE60012) else Color.White)
+                                        .border(1.dp, Color.Black, RoundedCornerShape(3.dp))
+                                        .size(22.dp),
+                                ) {
+                                    Text(
+                                        text = char.toString(),
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 12.sp,
+                                        ),
+                                        color = if (isRed) Color.White else Color.Black,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 FloatingFrostedSearchBar(
                     query = query,
                     onQueryChange = onQueryChange,
@@ -375,7 +418,7 @@ fun SearchScreen(
                     } else if (searchingAddons) {
                         stringResource(Res.string.search_addons_hint)
                     } else {
-                        stringResource(Res.string.search_hint)
+                        "TARGET SONG, ARTIST, BPM..."
                     },
                     modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                 )

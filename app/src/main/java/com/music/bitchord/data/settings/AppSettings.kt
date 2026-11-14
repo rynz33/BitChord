@@ -128,6 +128,7 @@ enum class ThemeMode(val label: String) {
 }
 
 enum class AccentTheme(val label: String, val hexAccent: Long, val description: String) {
+    PHANTOM_THIEVES("Phantom Thieves", 0xFFE60012, "Persona 5 high-contrast crimson red & phantom black"),
     VIOLET_GLOW("Rynz Violet", 0xFF8B5CF6, "Flagship vibrant violet with deep midnight undertones"),
     CYBER_CYAN("Cyber Cyan", 0xFF00E5FF, "Electric cyan & neon teal with futuristic obsidian contrast"),
     EMERALD_AURORA("Emerald Aurora", 0xFF10B981, "Vivid emerald green with mint ambient glow"),
@@ -137,7 +138,7 @@ enum class AccentTheme(val label: String, val hexAccent: Long, val description: 
 
     companion object {
         fun fromName(name: String?): AccentTheme =
-            entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: VIOLET_GLOW
+            entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: PHANTOM_THIEVES
     }
 }
 
@@ -424,7 +425,7 @@ object AppSettings {
 
     val playbackSpeed = MutableStateFlow(1.0f)
     val themeMode = MutableStateFlow(ThemeMode.DARK)
-    val accentTheme = MutableStateFlow(AccentTheme.VIOLET_GLOW)
+    val accentTheme = MutableStateFlow(AccentTheme.PHANTOM_THIEVES)
     val appFont = MutableStateFlow(AppFont.DEFAULT)
 
     /** Keep playing similar music once the queue runs out. */
@@ -1027,8 +1028,8 @@ object AppSettings {
             ThemeMode.valueOf(prefs.getString(KEY_THEME, null) ?: "DARK")
         }.getOrDefault(ThemeMode.DARK)
         accentTheme.value = runCatching {
-            AccentTheme.valueOf(prefs.getString(KEY_ACCENT_THEME, null) ?: AccentTheme.VIOLET_GLOW.name)
-        }.getOrDefault(AccentTheme.VIOLET_GLOW)
+            AccentTheme.valueOf(prefs.getString(KEY_ACCENT_THEME, null) ?: AccentTheme.PHANTOM_THIEVES.name)
+        }.getOrDefault(AccentTheme.PHANTOM_THIEVES)
         appFont.value = runCatching {
             AppFont.valueOf(prefs.getString(KEY_APP_FONT, null) ?: AppFont.DEFAULT.name)
         }.getOrDefault(AppFont.DEFAULT)

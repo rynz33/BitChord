@@ -15,6 +15,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.luminance
 import com.music.bitchord.ui.components.longPressMenuClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +61,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cached
 import androidx.compose.material.icons.rounded.Folder
@@ -531,100 +534,172 @@ fun CompactTrackRow(
  * system font scale.
  */
 @Composable
+private fun PersonaCutoutText(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        text.split(" ").forEachIndexed { wordIdx, word ->
+            if (wordIdx > 0) Spacer(Modifier.width(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                word.forEachIndexed { charIdx, char ->
+                    val isRed = (charIdx + wordIdx) % 2 == 1
+                    val tilt = when ((charIdx + wordIdx) % 4) {
+                        0 -> -2f
+                        1 -> 1.5f
+                        2 -> -1f
+                        else -> 2f
+                    }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .graphicsLayer { rotationZ = tilt }
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(if (isRed) Color(0xFFE60012) else Color.White)
+                            .border(1.2.dp, Color.Black, RoundedCornerShape(3.dp))
+                            .size(24.dp),
+                    ) {
+                        Text(
+                            text = char.toString(),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp,
+                            ),
+                            color = if (isRed) Color.White else Color.Black,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Persona 5 style HomeTitle with Take Your Heart header and Phantom Beats cutout.
+ */
+@Composable
 private fun HomeTitle(
     title: String,
     modifier: Modifier = Modifier,
     festiveLogo: Boolean = false,
     onFestiveLogoClick: (() -> Unit)? = null,
 ) {
-    val style = MaterialTheme.typography.displayLarge
-    val logoHeight = with(LocalDensity.current) { (style.fontSize * 0.78f).toDp() }
-    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
-    val headerShape = RoundedCornerShape(20.dp)
-    val headerBorder = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isDark) 0.30f else 0.40f),
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-            Color.White.copy(alpha = if (isDark) 0.08f else 0.14f),
-        )
-    )
-
     Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 6.dp)) {
+        // P5 Top Section Tag
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 6.dp),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .graphicsLayer { rotationZ = -2f }
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFE60012))
+                    .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 7.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = "01",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black)
+                    .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 9.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = "HOME // TAKE YOUR HEART",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = Color.White,
+                )
+            }
+        }
+
+        // P5 Wordmark Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(headerShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.28f else 0.38f))
-                .border(0.8.dp, headerBorder, headerShape)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color(0xFF121216))
+                .border(2.dp, Color(0xFFE60012), RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                val logoModifier = Modifier
-                    .height(logoHeight)
-                    .aspectRatio(LOGO_ASPECT)
-                if (festiveLogo) {
-                    GoldenLogo(
-                        painter = painterResource(Res.drawable.ic_logo),
-                        modifier = logoModifier,
-                        onClick = onFestiveLogoClick,
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_logo),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = logoModifier,
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Rynz",
-                        style = style,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = "Music",
-                        style = style,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
+            Column {
+                Text(
+                    text = "PHANTOM RADIO // LIVE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                    color = Color(0xFFE60012),
+                )
+                Spacer(Modifier.height(4.dp))
+                PersonaCutoutText(text = "STEAL BEATS")
             }
-
-            // Sleek modern glass indicator badge
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                    .border(
-                        0.8.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.35f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
-                                Color.White.copy(alpha = 0.10f),
-                            )
-                        ),
-                        RoundedCornerShape(percent = 50),
-                    )
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                    .graphicsLayer { rotationZ = 3f }
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFE60012))
+                    .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
+                Text(
+                    text = "★ JOKER",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // Daily Calling Card Banner
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer { rotationZ = -0.5f }
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF141418))
+                .border(1.5.dp, Color.White, RoundedCornerShape(8.dp))
+                .padding(12.dp),
+        ) {
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "⚡ DAILY CALLING CARD",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFFE60012),
+                    )
+                    Text(
+                        text = "ALL-OUT MIX",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "LOOKING COOL, JOKER!",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
                 )
                 Text(
-                    text = "Liquid Glass",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "Shibuya Underground Acid Jazz & Rebel Anthems Mix",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFD4D4D8),
                 )
             }
         }
@@ -639,10 +714,6 @@ private const val LOGO_ASPECT = 730f / 484f
 
 /**
  * Shared by the home feed, Explore and Library so headings line up across tabs.
- *
- * [onShowAll] is only ever set on Library, whose rows stop at five cards
- * rather than running the shelf's whole length — see [LibraryGridShelf].
- * Home and Explore never pass it, so their heading is unchanged.
  */
 @Composable
 internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() -> Unit)? = null) {
@@ -654,65 +725,44 @@ internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() 
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .width(3.dp)
-                        .height(16.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                                )
-                            )
-                        )
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = displayTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (displaySubtitle.isNotBlank()) {
-                Text(
-                    text = displaySubtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 11.dp),
-                )
-            }
+        Box(
+            modifier = Modifier
+                .graphicsLayer { rotationZ = -2f }
+                .clip(RoundedCornerShape(3.dp))
+                .background(Color(0xFFE60012))
+                .border(1.dp, Color.White, RoundedCornerShape(3.dp))
+                .padding(horizontal = 9.dp, vertical = 3.dp),
+        ) {
+            Text(
+                text = displayTitle.uppercase(),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                color = Color.White,
+            )
         }
+        Spacer(Modifier.width(8.dp))
+        if (displaySubtitle.isNotBlank()) {
+            Text(
+                text = displaySubtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFFA1A1AA),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+        Spacer(Modifier.weight(1f))
         if (onShowAll != null) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                    .border(
-                        0.8.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.35f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
-                                Color.White.copy(alpha = 0.10f),
-                            )
-                        ),
-                        RoundedCornerShape(percent = 50),
-                    )
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color.White)
                     .clickable(onClick = onShowAll)
-                    .padding(horizontal = 12.dp, vertical = 5.dp),
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
                 Text(
-                    text = stringResource(Res.string.show_all),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "ALL TARGETS >",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                    color = Color.Black,
                 )
             }
         }

@@ -33,6 +33,39 @@ val AccentRed = Color(0xFFFA2D48)
  * RynzMusic Multi-Theme Color Palettes
  * ========================================================================= */
 
+// 0. Phantom Thieves (Persona 5 High-Contrast Comic Aesthetic)
+private val PhantomThievesDarkColors = darkColorScheme(
+    primary = Color(0xFFE60012),      // Persona 5 Iconic Crimson Red
+    onPrimary = Color.White,
+    secondary = Color(0xFFFF2A3B),    // Vibrant Red Accent
+    onSecondary = Color.White,
+    tertiary = Color(0xFFFFFFFF),     // Stark White
+    background = Color(0xFF09090B),   // Phantom Pitch Black
+    onBackground = Color(0xFFFFFFFF), // Crisp White
+    surface = Color(0xFF121216),      // Deep Charcoal
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF1E1E24),
+    onSurfaceVariant = Color(0xFFD4D4D8),
+    outline = Color(0xFFE60012),      // Persona Red Comic Outline
+    outlineVariant = Color(0xFF3F3F46),
+)
+
+private val PhantomThievesLightColors = lightColorScheme(
+    primary = Color(0xFFD80010),
+    onPrimary = Color.White,
+    secondary = Color(0xFF18181B),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFE60012),
+    background = Color(0xFFF4F4F5),
+    onBackground = Color(0xFF09090B),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF09090B),
+    surfaceVariant = Color(0xFFE4E4E7),
+    onSurfaceVariant = Color(0xFF27272A),
+    outline = Color(0xFFD80010),
+    outlineVariant = Color(0xFFA1A1AA),
+)
+
 // 1. Rynz Violet Glow (Flagship theme)
 private val VioletDarkColors = darkColorScheme(
     primary = Color(0xFFA78BFA),
@@ -220,6 +253,7 @@ private val MidnightOledLightColors = lightColorScheme(
 )
 
 fun paletteFor(darkTheme: Boolean, accent: AccentTheme): ColorScheme = when (accent) {
+    AccentTheme.PHANTOM_THIEVES -> if (darkTheme) PhantomThievesDarkColors else PhantomThievesLightColors
     AccentTheme.VIOLET_GLOW -> if (darkTheme) VioletDarkColors else VioletLightColors
     AccentTheme.CYBER_CYAN -> if (darkTheme) CyberCyanDarkColors else CyberCyanLightColors
     AccentTheme.EMERALD_AURORA -> if (darkTheme) EmeraldAuroraDarkColors else EmeraldAuroraLightColors

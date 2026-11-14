@@ -788,7 +788,7 @@ private fun FloatingCapsuleTransportRow(
             targetValue = if (previousEnabled) 1f else 0.3f,
             label = "floatingPrevAlpha",
         )
-        // Previous floating glass capsule button
+        // Previous P5 button
         Box(
             modifier = Modifier
                 .size(skipTouchSize),
@@ -797,31 +797,9 @@ private fun FloatingCapsuleTransportRow(
             Box(
                 modifier = Modifier
                     .size(skipPillSize)
-                    .shadow(
-                        elevation = 5.dp,
-                        shape = CircleShape,
-                        spotColor = Color.White.copy(alpha = 0.14f * prevAlpha),
-                        ambientColor = Color.Black.copy(alpha = 0.25f),
-                    )
                     .clip(CircleShape)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.16f * prevAlpha),
-                                Color.White.copy(alpha = 0.05f * prevAlpha),
-                            ),
-                        ),
-                    )
-                    .border(
-                        width = 0.8.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.20f * prevAlpha),
-                                Color.White.copy(alpha = 0.08f * prevAlpha),
-                            ),
-                        ),
-                        shape = CircleShape,
-                    )
+                    .background(Color(0xFF141418))
+                    .border(2.dp, Color.White.copy(alpha = prevAlpha), CircleShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -843,7 +821,7 @@ private fun FloatingCapsuleTransportRow(
             }
         }
 
-        // Play / Pause floating glass capsule with soft depth & luminous glass fill
+        // Play / Pause Persona 5 vibrant red circular button
         Box(
             modifier = Modifier
                 .size(playTouchSize),
@@ -853,31 +831,9 @@ private fun FloatingCapsuleTransportRow(
                 Box(
                     modifier = Modifier
                         .size(playPillSize)
-                        .shadow(
-                            elevation = 8.dp,
-                            shape = CircleShape,
-                            spotColor = Color.White.copy(alpha = 0.22f),
-                            ambientColor = Color.Black.copy(alpha = 0.35f),
-                        )
                         .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.22f),
-                                    Color.White.copy(alpha = 0.08f),
-                                ),
-                            ),
-                        )
-                        .border(
-                            width = 0.8.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.30f),
-                                    Color.White.copy(alpha = 0.12f),
-                                ),
-                            ),
-                            shape = CircleShape,
-                        ),
+                        .background(Color(0xFFE60012))
+                        .border(3.dp, Color.White, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
@@ -890,31 +846,9 @@ private fun FloatingCapsuleTransportRow(
                 Box(
                     modifier = Modifier
                         .size(playPillSize)
-                        .shadow(
-                            elevation = 12.dp,
-                            shape = CircleShape,
-                            spotColor = Color.White.copy(alpha = 0.30f),
-                            ambientColor = Color.Black.copy(alpha = 0.40f),
-                        )
                         .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.26f),
-                                    Color.White.copy(alpha = 0.10f),
-                                ),
-                            ),
-                        )
-                        .border(
-                            width = 0.8.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.36f),
-                                    Color.White.copy(alpha = 0.14f),
-                                ),
-                            ),
-                            shape = CircleShape,
-                        )
+                        .background(Color(0xFFE60012))
+                        .border(3.dp, Color.White, CircleShape)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -938,7 +872,7 @@ private fun FloatingCapsuleTransportRow(
             targetValue = if (nextEnabled) 1f else 0.3f,
             label = "floatingNextAlpha",
         )
-        // Next floating glass capsule button
+        // Next P5 button
         Box(
             modifier = Modifier
                 .size(skipTouchSize),
@@ -947,31 +881,9 @@ private fun FloatingCapsuleTransportRow(
             Box(
                 modifier = Modifier
                     .size(skipPillSize)
-                    .shadow(
-                        elevation = 5.dp,
-                        shape = CircleShape,
-                        spotColor = Color.White.copy(alpha = 0.14f * nextAlpha),
-                        ambientColor = Color.Black.copy(alpha = 0.25f),
-                    )
                     .clip(CircleShape)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.16f * nextAlpha),
-                                Color.White.copy(alpha = 0.05f * nextAlpha),
-                            ),
-                        ),
-                    )
-                    .border(
-                        width = 0.8.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.20f * nextAlpha),
-                                Color.White.copy(alpha = 0.08f * nextAlpha),
-                            ),
-                        ),
-                        shape = CircleShape,
-                    )
+                    .background(Color(0xFF141418))
+                    .border(2.dp, Color.White.copy(alpha = nextAlpha), CircleShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,

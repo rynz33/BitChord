@@ -9,6 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
@@ -99,6 +102,138 @@ import com.music.bitchord.ui.player.MeshPalette
  * track's rating off (see MainViewModel's `likeStatuses`); it just isn't a
  * second place to browse it.
  */
+@Composable
+private fun PersonaVaultHeader() {
+    Column(modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 6.dp)) {
+        // P5 Top Section Tag
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 6.dp),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .graphicsLayer { rotationZ = -2f }
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFFE60012))
+                    .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 7.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    text = "04",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black)
+                    .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 9.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = "VAULT // THIEVES DEN",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = Color.White,
+                )
+            }
+        }
+
+        // P5 Cutout Header: MY VAULT
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(bottom = 8.dp),
+        ) {
+            "MY VAULT".split(" ").forEachIndexed { wordIdx, word ->
+                if (wordIdx > 0) Spacer(Modifier.width(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    word.forEachIndexed { charIdx, char ->
+                        val isRed = (charIdx + wordIdx) % 2 == 1
+                        val tilt = when ((charIdx + wordIdx) % 4) {
+                            0 -> -2f
+                            1 -> 1.5f
+                            2 -> -1f
+                            else -> 2f
+                        }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .graphicsLayer { rotationZ = tilt }
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(if (isRed) Color(0xFFE60012) else Color.White)
+                                .border(1.2.dp, Color.Black, RoundedCornerShape(3.dp))
+                                .size(24.dp),
+                        ) {
+                            Text(
+                                text = char.toString(),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.sp,
+                                ),
+                                color = if (isRed) Color.White else Color.Black,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // P5 Confidant Rank Card
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer { rotationZ = -0.5f }
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF121216))
+                .border(2.dp, Color(0xFFE60012), RoundedCornerShape(8.dp))
+                .padding(14.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column {
+                    Text(
+                        text = "CONFIDANT LISTENER RANK",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFFE60012),
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = "RANK MAX // PHANTOM VIP",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                        color = Color.White,
+                    )
+                    Text(
+                        text = "3 Liked • 3 Heist Lists",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFD4D4D8),
+                    )
+                }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = 3f }
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFE60012))
+                        .border(1.5.dp, Color.White, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = "99\nMAX",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                        color = Color.White,
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
@@ -156,12 +291,7 @@ fun LibraryScreen(
         ) {
             if (showTitle) {
                 item {
-                    Text(
-                        text = stringResource(Res.string.library),
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp),
-                    )
+                    PersonaVaultHeader()
                 }
             }
             item(key = "replay") { replay() }
