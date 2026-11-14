@@ -15,6 +15,11 @@ import androidx.compose.ui.unit.sp
 import com.music.bitchord.ui.components.DoodleCatMascot
 import com.music.bitchord.ui.components.DoodleSun
 import com.music.bitchord.ui.components.DoodleCloud
+import com.music.bitchord.ui.components.DoodleLayer04ProjectOverview
+import com.music.bitchord.ui.components.DoodleLayer05SoundTheoryEq
+import com.music.bitchord.ui.components.DoodleLayer06ListeningAnalysis
+import com.music.bitchord.ui.components.DoodleLayer09MixingReceipt
+import com.music.bitchord.ui.components.DoodleLayer10SimilarElements
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
@@ -243,9 +248,30 @@ private fun PersonaVaultHeader() {
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
+
+            // Layer 04: Project Overview
+            DoodleLayer04ProjectOverview()
+
+            Spacer(Modifier.height(12.dp))
+
+            // Layer 05: Sound Theory / EQ
+            DoodleLayer05SoundTheoryEq()
+
+            Spacer(Modifier.height(12.dp))
+
+            // Layer 06: Listening Analysis
+            DoodleLayer06ListeningAnalysis()
+
+            Spacer(Modifier.height(12.dp))
 
             // Sleep Timer Card (Layer 07 Conclusion)
+            Text(
+                text = "Layer 07 // Conclusion & Wind Down",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = if (isDark) Color.LightGray else Color.Gray,
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -278,6 +304,16 @@ private fun PersonaVaultHeader() {
                     )
                 }
             }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Layer 09: Mixing Receipt
+            DoodleLayer09MixingReceipt()
+
+            Spacer(Modifier.height(12.dp))
+
+            // Layer 10: Similar Elements (3x3 Cat Avatar Sticker Cards)
+            DoodleLayer10SimilarElements()
         } else {
             // P5 Top Section Tag
             Row(
@@ -569,13 +605,30 @@ data class LibraryLink(val item: ShelfItem, val icon: ImageVector, val logo: Dra
  */
 @Composable
 private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Unit) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isPersona = themeName == "PHANTOM_THIEVES"
     val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
-    val glassCardFill = if (isLight) Color.White.copy(alpha = 0.55f) else Color(0xFF1E1E22).copy(alpha = 0.48f)
-    val glassBorder = Brush.verticalGradient(
-        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
-        else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.05f)),
-    )
-    val dividerColor = if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.08f)
+    val outlineColor = if (isLight) Color.Black else Color.White
+    val glassCardFill = when {
+        isDoodle -> if (isLight) Color(0xFFFBFBFC) else Color(0xFF1C1C20)
+        isPersona -> Color(0xFF121216)
+        isLight -> Color.White.copy(alpha = 0.55f)
+        else -> Color(0xFF1E1E22).copy(alpha = 0.48f)
+    }
+    val glassBorder = when {
+        isDoodle -> Brush.verticalGradient(listOf(outlineColor, outlineColor))
+        isPersona -> Brush.verticalGradient(listOf(Color(0xFFE60012), Color(0xFFE60012)))
+        isLight -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f)))
+        else -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.05f)))
+    }
+    val borderWidth = if (isDoodle) 2.dp else if (isPersona) 1.5.dp else 0.8.dp
+    val dividerColor = when {
+        isDoodle -> outlineColor.copy(alpha = 0.2f)
+        isPersona -> Color(0xFFE60012).copy(alpha = 0.35f)
+        isLight -> Color.Black.copy(alpha = 0.06f)
+        else -> Color.White.copy(alpha = 0.08f)
+    }
 
     Box(
         modifier = Modifier
@@ -589,18 +642,7 @@ private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Un
             )
             .clip(RoundedCornerShape(20.dp))
             .background(glassCardFill)
-            .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(20.dp))
-            .drawWithContent {
-                drawContent()
-                // Top ambient specular sheen
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = if (isLight) 0.15f else 0.08f), Color.Transparent),
-                        startY = 0f,
-                        endY = 40f,
-                    ),
-                )
-            },
+            .border(width = borderWidth, brush = glassBorder, shape = RoundedCornerShape(20.dp)),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             links.forEachIndexed { index, link ->
@@ -692,7 +734,11 @@ private fun LibrarySectionHeader(
 ) {
     val displayTitle = localizeShelfTitle(title)
     val displaySubtitle = localizeShelfSubtitle(subtitle)
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isPersona = themeName == "PHANTOM_THIEVES"
     val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val outlineColor = if (isLight) Color.Black else Color.White
 
     Row(
         modifier = Modifier
@@ -703,7 +749,9 @@ private fun LibrarySectionHeader(
         Column(Modifier.weight(1f)) {
             Text(
                 text = displayTitle,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = if (isDoodle || isPersona) FontWeight.Black else FontWeight.Bold,
+                ),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -723,15 +771,20 @@ private fun LibrarySectionHeader(
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(
-                        if (isLight) Color.White.copy(alpha = 0.65f)
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        when {
+                            isDoodle -> if (isLight) Color.White else Color(0xFF1C1C20)
+                            isPersona -> Color(0xFFE60012)
+                            isLight -> Color.White.copy(alpha = 0.65f)
+                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                        },
                     )
                     .border(
-                        width = 0.8.dp,
-                        brush = Brush.verticalGradient(
-                            if (isLight) listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.3f))
-                            else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.06f)),
-                        ),
+                        width = if (isDoodle) 1.5.dp else if (isPersona) 1.2.dp else 0.8.dp,
+                        color = when {
+                            isDoodle -> outlineColor
+                            isPersona -> Color.White
+                            else -> Color.White.copy(alpha = 0.35f)
+                        },
                         shape = CircleShape,
                     )
                     .clickable(onClick = onShowAll)
@@ -740,14 +793,14 @@ private fun LibrarySectionHeader(
             ) {
                 Text(
                     text = stringResource(Res.string.show_all),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = if (isPersona) Color.White else if (isDoodle) outlineColor else MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = BitChordIcons.ChevronRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (isPersona) Color.White else if (isDoodle) outlineColor else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(14.dp),
                 )
             }
@@ -756,8 +809,7 @@ private fun LibrarySectionHeader(
 }
 
 /**
- * Modern Liquid Glass card for creating a new playlist or importing Spotify playlists,
- * featuring translucent frosted background, specular sheen, and glowing circular icon badge.
+ * Modern Liquid Glass / Dual-UI card for creating a new playlist or importing Spotify playlists.
  */
 @Composable
 internal fun LibraryNewShelfCard(
@@ -768,12 +820,24 @@ internal fun LibraryNewShelfCard(
     modifier: Modifier = Modifier.width(SHELF_CARD_WIDTH),
     logo: DrawableResource? = null,
 ) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isPersona = themeName == "PHANTOM_THIEVES"
     val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
-    val glassCardFill = if (isLight) Color.White.copy(alpha = 0.48f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
-    val glassBorder = Brush.verticalGradient(
-        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
-        else listOf(Color.White.copy(alpha = 0.24f), Color.White.copy(alpha = 0.06f)),
-    )
+    val outlineColor = if (isLight) Color.Black else Color.White
+    val glassCardFill = when {
+        isDoodle -> if (isLight) Color(0xFFFBFBFC) else Color(0xFF1C1C20)
+        isPersona -> Color(0xFF141418)
+        isLight -> Color.White.copy(alpha = 0.48f)
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
+    }
+    val borderBrush = when {
+        isDoodle -> Brush.verticalGradient(listOf(outlineColor, outlineColor))
+        isPersona -> Brush.verticalGradient(listOf(Color(0xFFE60012), Color(0xFFE60012)))
+        isLight -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f)))
+        else -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.24f), Color.White.copy(alpha = 0.06f)))
+    }
+    val borderWidth = if (isDoodle) 2.dp else if (isPersona) 1.5.dp else 0.8.dp
 
     Column(
         modifier = modifier.clickable(onClick = onClick),
@@ -790,20 +854,7 @@ internal fun LibraryNewShelfCard(
                 )
                 .clip(RoundedCornerShape(16.dp))
                 .background(glassCardFill)
-                .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(16.dp))
-                .drawWithContent {
-                    drawContent()
-                    // Ambient specular glass sheen
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            listOf(
-                                Color.White.copy(alpha = if (isLight) 0.18f else 0.10f),
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.03f),
-                            ),
-                        ),
-                    )
-                },
+                .border(width = borderWidth, brush = borderBrush, shape = RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -929,11 +980,18 @@ internal fun LibraryShelfCard(
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
 ) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isPersona = themeName == "PHANTOM_THIEVES"
     val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
-    val glassBorder = Brush.verticalGradient(
-        if (isLight) listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.20f))
-        else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f)),
-    )
+    val outlineColor = if (isLight) Color.Black else Color.White
+    val glassBorder = when {
+        isDoodle -> Brush.verticalGradient(listOf(outlineColor, outlineColor))
+        isPersona -> Brush.verticalGradient(listOf(Color(0xFFE60012), Color(0xFFE60012)))
+        isLight -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.20f)))
+        else -> Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f)))
+    }
+    val cardBorderWidth = if (isDoodle) 2.dp else if (isPersona) 1.5.dp else 0.8.dp
 
     Column(
         modifier = modifier
@@ -1021,7 +1079,7 @@ internal fun LibraryShelfCard(
                             spotColor = Color.Black.copy(alpha = 0.30f),
                         )
                         .clip(RoundedCornerShape(16.dp))
-                        .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(16.dp))
+                        .border(width = cardBorderWidth, brush = glassBorder, shape = RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     AsyncImage(

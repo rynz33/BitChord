@@ -157,6 +157,8 @@ import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.music.bitchord.ui.components.DoodleCloud
+import com.music.bitchord.ui.components.DoodleSun
 import com.music.bitchord.ui.components.ExplicitBadge
 import com.music.bitchord.ui.components.VideoThumbnails
 import com.music.bitchord.ui.components.menuAnchor
@@ -756,6 +758,89 @@ private fun SlidingPlayerDeck(
 }
 
 /**
+ * Dual-UI top studio/ambush badge for Now Playing:
+ * - Doodle Cat (Layer 08 - Now Playing Studio): monochrome pill with DoodleSun, "NOW PLAYING STUDIO", and DoodleCloud.
+ * - Persona 5 (Layer 03 - Now Playing // All-Out): slanted Crimson Red "03 // NOW AMBUSHING" badge + "SHOWTIME!!" badge.
+ */
+@Composable
+private fun DualUiNowPlayingBadge(
+    isDoodle: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (isDoodle) {
+        val pillShape = RoundedCornerShape(16.dp)
+        Row(
+            modifier = modifier
+                .shadow(2.dp, pillShape, clip = false)
+                .clip(pillShape)
+                .background(Color.White.copy(alpha = 0.94f))
+                .border(1.5.dp, Color.Black, pillShape)
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DoodleSun(
+                modifier = Modifier.size(18.dp),
+                color = Color.Black,
+            )
+            Text(
+                text = "NOW PLAYING STUDIO",
+                color = Color.Black,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 11.sp,
+                letterSpacing = 0.6.sp,
+            )
+            DoodleCloud(
+                modifier = Modifier.size(18.dp),
+                color = Color.Black,
+            )
+        }
+    } else {
+        val badgeShape = RoundedCornerShape(4.dp)
+        Row(
+            modifier = modifier.graphicsLayer { rotationZ = -1.5f },
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .shadow(3.dp, badgeShape, clip = false)
+                    .clip(badgeShape)
+                    .background(Color(0xFFE60012))
+                    .border(1.5.dp, Color.White, badgeShape)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "03 // NOW AMBUSHING",
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.6.sp,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .shadow(3.dp, badgeShape, clip = false)
+                    .clip(badgeShape)
+                    .background(Color(0xFF141418))
+                    .border(1.5.dp, Color.White, badgeShape)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "SHOWTIME!!",
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.5.sp,
+                )
+            }
+        }
+    }
+}
+
+/**
  * Floating capsule transport buttons with soft depth, liquid glass fill, and luminous glow.
  */
 @Composable
@@ -770,6 +855,10 @@ private fun FloatingCapsuleTransportRow(
     compact: Boolean = false,
 ) {
     val haptics = rememberHaptics()
+    val themeName by com.music.bitchord.ui.AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val skipBtnBg = if (isDoodle) Color.White else Color(0xFF141418)
+    val skipBtnFg = if (isDoodle) Color.Black else Color.White
     val playTouchSize = if (compact) 76.dp else 92.dp
     val playPillSize = if (compact) 60.dp else 76.dp
     val playGlyphSize = if (compact) 32.dp else 42.dp
@@ -788,7 +877,7 @@ private fun FloatingCapsuleTransportRow(
             targetValue = if (previousEnabled) 1f else 0.3f,
             label = "floatingPrevAlpha",
         )
-        // Previous P5 button
+        // Previous button
         Box(
             modifier = Modifier
                 .size(skipTouchSize),
@@ -798,8 +887,8 @@ private fun FloatingCapsuleTransportRow(
                 modifier = Modifier
                     .size(skipPillSize)
                     .clip(CircleShape)
-                    .background(Color(0xFF141418))
-                    .border(2.dp, Color.White.copy(alpha = prevAlpha), CircleShape)
+                    .background(skipBtnBg)
+                    .border(2.dp, skipBtnFg.copy(alpha = prevAlpha), CircleShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -813,7 +902,7 @@ private fun FloatingCapsuleTransportRow(
                 Icon(
                     painter = painterResource(Res.drawable.ic_player_previous),
                     contentDescription = stringResource(Res.string.widget_previous),
-                    tint = Color.White.copy(alpha = prevAlpha),
+                    tint = skipBtnFg.copy(alpha = prevAlpha),
                     modifier = Modifier
                         .size(skipGlyphSize)
                         .graphicsLayer { scaleY = 0.85f },
@@ -821,15 +910,15 @@ private fun FloatingCapsuleTransportRow(
             }
         }
 
-        // Play / Pause Persona 5 vibrant red circular button
+        // Play / Pause circular button
         Box(
             modifier = Modifier
                 .size(playTouchSize),
             contentAlignment = Alignment.Center,
         ) {
-            val playBtnFill = MaterialTheme.colorScheme.primary
-            val playBtnBorder = if (playBtnFill == Color.White) Color.Black else Color.White
-            val playGlyphTint = MaterialTheme.colorScheme.onPrimary
+            val playBtnFill = if (isDoodle) Color.Black else MaterialTheme.colorScheme.primary
+            val playBtnBorder = if (isDoodle) Color.White else (if (playBtnFill == Color.White) Color.Black else Color.White)
+            val playGlyphTint = if (isDoodle) Color.White else MaterialTheme.colorScheme.onPrimary
 
             if (isLoading) {
                 Box(
@@ -876,7 +965,7 @@ private fun FloatingCapsuleTransportRow(
             targetValue = if (nextEnabled) 1f else 0.3f,
             label = "floatingNextAlpha",
         )
-        // Next P5 button
+        // Next button
         Box(
             modifier = Modifier
                 .size(skipTouchSize),
@@ -886,8 +975,8 @@ private fun FloatingCapsuleTransportRow(
                 modifier = Modifier
                     .size(skipPillSize)
                     .clip(CircleShape)
-                    .background(Color(0xFF141418))
-                    .border(2.dp, Color.White.copy(alpha = nextAlpha), CircleShape)
+                    .background(skipBtnBg)
+                    .border(2.dp, skipBtnFg.copy(alpha = nextAlpha), CircleShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -901,7 +990,7 @@ private fun FloatingCapsuleTransportRow(
                 Icon(
                     painter = painterResource(Res.drawable.ic_player_next),
                     contentDescription = stringResource(Res.string.widget_next),
-                    tint = Color.White.copy(alpha = nextAlpha),
+                    tint = skipBtnFg.copy(alpha = nextAlpha),
                     modifier = Modifier
                         .size(skipGlyphSize)
                         .graphicsLayer { scaleY = 0.85f },
@@ -1038,6 +1127,8 @@ fun NowPlayingScreen(
 ) {
     val density = LocalDensity.current
     val haptics = rememberHaptics()
+    val themeName by com.music.bitchord.ui.AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
 
     // Remote tracks whose art lives inside the file resolve it here, once —
     // every surface below reads the same value rather than each triggering
@@ -1566,7 +1657,8 @@ fun NowPlayingScreen(
     // still-art full-bleed preference. Other providers and static artwork keep
     // answering to that preference exactly as before.
     // A music video sits in the card's place at its own 16:9, never full bleed.
-    val heroMode = !videoMode && (
+    // Doodle Cat (Layer 08 - Now Playing Studio) always frames the cover as a crisp studio sleeve card.
+    val heroMode = !isDoodle && !videoMode && (
         spotifyCanvasOnPhone ||
             (fullBleedArt && playerFillsWindow(windowWidth))
         )
@@ -3708,6 +3800,42 @@ fun NowPlayingScreen(
                             // fade away with Spotify's lower control deck rather than
                             // following the compact credits to the bottom edge.
                             WhileShown({ !collapsePastHalf }) {
+                                if (isDoodle || !heroMode) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .border(
+                                                width = if (isDoodle) 2.5.dp else 1.5.dp,
+                                                color = if (isDoodle) Color.White else Color(0xFFE60012),
+                                                shape = RoundedCornerShape(8.dp),
+                                            )
+                                            .padding(if (isDoodle) 2.5.dp else 0.dp)
+                                            .then(
+                                                if (isDoodle) {
+                                                    Modifier.border(
+                                                        width = 2.dp,
+                                                        color = Color.Black,
+                                                        shape = RoundedCornerShape(6.dp),
+                                                    )
+                                                } else {
+                                                    Modifier
+                                                },
+                                            )
+                                            .graphicsLayer {
+                                                alpha = (1f - p() * 2f) * spotifyChromeAlpha
+                                            },
+                                    )
+                                }
+                                DualUiNowPlayingBadge(
+                                    isDoodle = isDoodle,
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .padding(horizontal = 10.dp, vertical = 10.dp)
+                                        .graphicsLayer {
+                                            alpha = (1f - p() * 2f) * spotifyChromeAlpha
+                                        },
+                                )
                                 SleeveNerdStats(
                                     song = song,
                                     modifier = Modifier

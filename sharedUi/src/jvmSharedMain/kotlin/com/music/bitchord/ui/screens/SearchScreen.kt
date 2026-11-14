@@ -18,6 +18,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.music.bitchord.ui.components.PillSegmentedControl
 import com.music.bitchord.ui.components.longPressMenuClickable
 import com.music.bitchord.ui.components.DoodleCatMascot
@@ -63,7 +65,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -473,6 +477,63 @@ fun SearchScreen(
                     },
                     modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                 )
+
+                // Layer 02 Filter Tags Row when query is empty
+                if (query.isEmpty()) {
+                    val tags = if (isDoodle) {
+                        listOf("#ALL" to "", "#LO-FI" to "Lo-fi", "#CATNIP" to "Catnip Lo-fi", "#PIANO" to "Piano", "#AMBIENT" to "Ambient")
+                    } else {
+                        listOf("#ALL" to "", "#AMBUSH" to "Persona Ambush", "#HEIST" to "Phantom Heist", "#JAZZ" to "Acid Jazz")
+                    }
+                    var selectedTag by remember(isDoodle) { mutableStateOf("#ALL") }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        tags.forEach { (tagLabel, tagQuery) ->
+                            val isSelected = selectedTag == tagLabel
+                            val tagShape = RoundedCornerShape(if (isDoodle) 14.dp else 4.dp)
+                            val tagBg = if (isDoodle) {
+                                if (isSelected) outlineColor else (if (isDark) Color(0xFF1E1E22) else Color.White)
+                            } else {
+                                if (isSelected) Color(0xFFE60012) else Color(0xFF141418)
+                            }
+                            val tagFg = if (isDoodle) {
+                                if (isSelected) (if (isDark) Color.Black else Color.White) else outlineColor
+                            } else {
+                                Color.White
+                            }
+                            val tagBorder = if (isDoodle) outlineColor else (if (isSelected) Color.White else Color(0xFFE60012))
+                            Box(
+                                modifier = Modifier
+                                    .clip(tagShape)
+                                    .background(tagBg)
+                                    .border(width = if (isDoodle) 1.5.dp else 1.dp, color = tagBorder, shape = tagShape)
+                                    .clickable {
+                                        selectedTag = tagLabel
+                                        if (tagQuery.isNotEmpty()) {
+                                            onQueryChange(tagQuery)
+                                        }
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 5.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = tagLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.5.sp,
+                                    ),
+                                    color = tagFg,
+                                )
+                            }
+                        }
+                    }
+                }
             }
             if (sourceSwitcher != null) {
                 AnimatedVisibility(
@@ -543,6 +604,9 @@ fun SearchScreen(
                     }
                 }
                 results == null -> if (history.isEmpty()) {
+                    item(key = "search:layer02-contents") {
+                        Layer02DefaultContents(onSelectQuery = onQueryChange)
+                    }
                     item { MessageState(stringResource(Res.string.search_empty)) }
                 } else {
                     recentSearches(
@@ -743,7 +807,7 @@ private fun LazyListScope.librarySearchResults(
     }
 }
 
-/** The All response carries its highest-confidence music hit as an elegant frosted glass card. */
+/** The All response carries its highest-confidence music hit as an elegant card. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TopResultCard(
@@ -753,37 +817,25 @@ private fun TopResultCard(
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
-    val glassFill = if (isLight) Color.White.copy(alpha = 0.55f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-    val glassBorder = Brush.verticalGradient(
-        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
-        else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f)),
-    )
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val cardShape = RoundedCornerShape(if (isDoodle) 18.dp else 10.dp)
+    val cardFill = if (isDoodle) {
+        if (isDark) Color(0xFF1C1C20) else Color.White
+    } else {
+        Color(0xFF121216)
+    }
+    val cardBorderColor = if (isDoodle) outlineColor else Color(0xFFE60012)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = PAGE_GUTTER, vertical = 6.dp)
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(22.dp),
-                ambientColor = Color.Black.copy(alpha = 0.20f),
-                spotColor = Color.Black.copy(alpha = 0.30f),
-            )
-            .clip(RoundedCornerShape(22.dp))
-            .background(glassFill)
-            .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(22.dp))
-            .drawWithContent {
-                drawContent()
-                // Top ambient specular sheen
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = if (isLight) 0.16f else 0.08f), Color.Transparent),
-                        startY = 0f,
-                        endY = 60f,
-                    ),
-                )
-            }
+            .clip(cardShape)
+            .background(cardFill)
+            .border(width = 2.dp, color = cardBorderColor, shape = cardShape)
             .longPressMenuClickable(onClick = onPlay, onLongClick = onLongPress)
             .contextClick(onLongPress)
             .padding(16.dp),
@@ -791,23 +843,15 @@ private fun TopResultCard(
         Column {
             Row(
                 modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-                    .border(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.32f), CircleShape)
+                    .clip(RoundedCornerShape(if (isDoodle) 12.dp else 4.dp))
+                    .background(if (isDoodle) outlineColor else Color(0xFFE60012))
                     .padding(horizontal = 10.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                )
-                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "TOP RESULT",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = MaterialTheme.colorScheme.primary,
+                    text = if (isDoodle) "★ TOP RESULT" else "01 // TOP RESULT",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 0.8.sp),
+                    color = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White,
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -815,8 +859,12 @@ private fun TopResultCard(
                 Box(
                     modifier = Modifier
                         .trackArtSize(72.dp, song.isVideo)
-                        .clip(RoundedCornerShape(14.dp))
-                        .border(0.6.dp, Color.White.copy(alpha = 0.20f), RoundedCornerShape(14.dp)),
+                        .clip(RoundedCornerShape(if (isDoodle) 14.dp else 8.dp))
+                        .border(
+                            width = if (isDoodle) 2.dp else 1.5.dp,
+                            color = if (isDoodle) outlineColor else Color.White,
+                            shape = RoundedCornerShape(if (isDoodle) 14.dp else 8.dp),
+                        ),
                 ) {
                     AsyncImage(
                         model = song.thumbnailUrl?.artworkAt(ROW_ART_PX),
@@ -829,7 +877,7 @@ private fun TopResultCard(
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = song.title,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -853,30 +901,30 @@ private fun TopResultCard(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = onPlay,
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(if (isDoodle) 16.dp else 6.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = if (isDoodle) outlineColor else Color(0xFFE60012),
+                        contentColor = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White,
                     ),
                     contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
                 ) {
                     Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(Res.string.play), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(Res.string.play), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 }
                 OutlinedButton(
                     onClick = onPlaylist,
-                    shape = CircleShape,
-                    border = BorderStroke(0.8.dp, if (isLight) Color.Black.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.20f)),
+                    shape = RoundedCornerShape(if (isDoodle) 16.dp else 6.dp),
+                    border = BorderStroke(if (isDoodle) 2.dp else 1.5.dp, if (isDoodle) outlineColor else Color.White),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White.copy(alpha = if (isLight) 0.35f else 0.06f),
+                        containerColor = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                     ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(Res.string.playlist_action), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(Res.string.playlist_action), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 }
             }
         }
@@ -1086,6 +1134,76 @@ private fun TypeaheadSongRow(
     }
 }
 
+@Composable
+private fun Layer02DefaultContents(
+    onSelectQuery: (String) -> Unit,
+) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val entries = if (isDoodle) {
+        listOf(
+            Triple("01", "Lo-fi Catnip Beats", "124 Tracks • Cozy Study"),
+            Triple("02", "Warm Vinyl Piano", "86 Tracks • Acoustic Purr"),
+            Triple("03", "Rainy Window Ambience", "64 Tracks • Sleepy Whiskers"),
+        )
+    } else {
+        listOf(
+            Triple("01", "Beneath the Mask", "Shoji Meguro • Acid Jazz"),
+            Triple("02", "Last Surprise", "Lyn • All-Out Ambush"),
+            Triple("03", "Rivers in the Desert", "Phantom Thieves • Boss Mix"),
+        )
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PAGE_GUTTER, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        entries.forEach { (num, title, sub) ->
+            val shape = RoundedCornerShape(if (isDoodle) 16.dp else 8.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .background(if (isDoodle) (if (isDark) Color(0xFF1C1C20) else Color.White) else Color(0xFF141418))
+                    .border(2.dp, if (isDoodle) outlineColor else Color(0xFFE60012), shape)
+                    .clickable { onSelectQuery(title) }
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(if (isDoodle) 10.dp else 4.dp))
+                        .background(if (isDoodle) outlineColor else Color(0xFFE60012)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = num,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                        color = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White,
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = sub,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
  * What was searched for before, shown in place of the results while the field
  * is empty.
@@ -1101,6 +1219,10 @@ private fun LazyListScope.recentSearches(
     onSongSwipe: (Song) -> Unit,
 ) {
     item(key = "recent:header") {
+        val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+        val isDoodle = themeName == "DOODLE_CAT"
+        val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+        val outlineColor = if (isDark) Color.White else Color.Black
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1109,25 +1231,19 @@ private fun LazyListScope.recentSearches(
         ) {
             Text(
                 text = stringResource(Res.string.recent_searches),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
             )
+            val clearShape = RoundedCornerShape(if (isDoodle) 14.dp else 6.dp)
             Box(
                 modifier = Modifier
-                    .clip(CircleShape)
-                    .background(
-                        if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) Color.White.copy(alpha = 0.65f)
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    )
+                    .clip(clearShape)
+                    .background(if (isDoodle) (if (isDark) Color(0xFF1E1E22) else Color.White) else Color(0xFF141418))
                     .border(
-                        0.8.dp,
-                        Brush.verticalGradient(
-                            if (MaterialTheme.colorScheme.surface.luminance() > 0.5f)
-                                listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.25f))
-                            else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.06f)),
-                        ),
-                        CircleShape,
+                        width = if (isDoodle) 2.dp else 1.5.dp,
+                        color = if (isDoodle) outlineColor else Color(0xFFE60012),
+                        shape = clearShape,
                     )
                     .clickable(onClick = onClear)
                     .padding(horizontal = 14.dp, vertical = 5.dp),
@@ -1135,15 +1251,16 @@ private fun LazyListScope.recentSearches(
             ) {
                 Text(
                     text = stringResource(Res.string.clear),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = if (isDoodle) outlineColor else Color.White,
                 )
             }
         }
     }
-    items(history, key = { "recent:${it.id}" }) { entity ->
+    itemsIndexed(history, key = { _, it -> "recent:${it.id}" }) { idx, entity ->
         val song = entity.toSong()
         RecentSearchEntityRow(
+            index = idx + 1,
             entity = entity,
             isCurrent = entity.entityType == EntityType.TRACK && entity.id == currentSong?.videoId,
             isPlaying = isPlaying,
@@ -1262,6 +1379,7 @@ private fun LazyListScope.recentAddonSearches(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RecentSearchEntityRow(
+    index: Int = 1,
     entity: SearchHistoryEntity,
     isCurrent: Boolean,
     isPlaying: Boolean,
@@ -1270,7 +1388,15 @@ private fun RecentSearchEntityRow(
     onRemove: () -> Unit,
     onSwipeToQueue: (() -> Unit)? = null,
 ) {
-    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val rowShape = RoundedCornerShape(if (isDoodle) 16.dp else 8.dp)
+    val rowBg = if (isDoodle) (if (isDark) Color(0xFF1C1C20) else Color.White) else Color(0xFF141418)
+    val rowBorder = if (isDoodle) outlineColor else Color(0xFFE60012)
+    val numText = index.toString().padStart(2, '0')
+
     SwipeToQueueBox(
         onSwipeToQueue = onSwipeToQueue,
         modifier = Modifier.fillMaxWidth(),
@@ -1278,35 +1404,55 @@ private fun RecentSearchEntityRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = PAGE_GUTTER, vertical = 4.dp)
+                .clip(rowShape)
+                .background(rowBg)
+                .border(width = if (isDoodle) 2.dp else 1.5.dp, color = rowBorder, shape = rowShape)
                 .longPressMenuClickable(
                     onClick = onClick,
                     onLongClick = onLongPress,
-                    liftPadding = PaddingValues(start = PAGE_GUTTER, end = 8.dp),
                 )
                 .contextClick(onLongPress)
-                .padding(start = PAGE_GUTTER, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(52.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(if (isDoodle) 8.dp else 4.dp))
+                    .background(if (isDoodle) outlineColor else Color(0xFFE60012)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = numText,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                    color = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White,
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Box(Modifier.size(48.dp)) {
                 AsyncImage(
                     model = entity.artworkUrl,
                     contentDescription = null,
                     modifier = Modifier
-                        .size(52.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .thumbnailBorder(RoundedCornerShape(8.dp))
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(if (isDoodle) 10.dp else 6.dp))
+                        .border(
+                            width = 1.5.dp,
+                            color = if (isDoodle) outlineColor else Color.White.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(if (isDoodle) 10.dp else 6.dp),
+                        )
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
                 if (isCurrent && isPlaying) {
                     SearchPlayingBars(Modifier.align(Alignment.Center))
                 }
             }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = entity.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -1322,18 +1468,17 @@ private fun RecentSearchEntityRow(
             }
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.08f))
-                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                    .border(1.5.dp, if (isDoodle) outlineColor else Color(0xFFE60012), CircleShape)
                     .clickable(onClick = onRemove),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = stringResource(Res.string.recent_search_remove, entity.title),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp),
+                    tint = if (isDoodle) outlineColor else Color.White,
+                    modifier = Modifier.size(15.dp),
                 )
             }
         }
@@ -1343,6 +1488,12 @@ private fun RecentSearchEntityRow(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BrowseRow(item: BrowseItem, onClick: () -> Unit, onLongPress: (() -> Unit)? = null) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val artShape = if (item.type == BrowseType.ARTIST) CircleShape else RoundedCornerShape(if (isDoodle) 10.dp else 6.dp)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1360,13 +1511,11 @@ private fun BrowseRow(item: BrowseItem, onClick: () -> Unit, onLongPress: (() ->
             contentDescription = null,
             modifier = Modifier
                 .size(52.dp)
-                .clip(
-                    if (item.type == BrowseType.ARTIST) CircleShape
-                    else RoundedCornerShape(8.dp),
-                )
-                .thumbnailBorder(
-                    if (item.type == BrowseType.ARTIST) CircleShape
-                    else RoundedCornerShape(8.dp),
+                .clip(artShape)
+                .border(
+                    width = if (isDoodle) 2.dp else 1.5.dp,
+                    color = if (isDoodle) outlineColor else Color(0xFFE60012),
+                    shape = artShape,
                 )
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         )
@@ -1374,7 +1523,9 @@ private fun BrowseRow(item: BrowseItem, onClick: () -> Unit, onLongPress: (() ->
         Column(Modifier.weight(1f)) {
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.SemiBold,
+                ),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

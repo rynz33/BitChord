@@ -36,10 +36,15 @@ object AndroidAppUiHost : AppUiHost {
     }
 
     override fun selectTheme(themeName: String) {
-        val target = AppSettings.accentTheme.value.let {
-            com.music.bitchord.data.settings.AccentTheme.fromName(themeName)
-        }
+        val target = com.music.bitchord.data.settings.AccentTheme.fromName(themeName)
         AppSettings.setAccentTheme(target)
+        when (target) {
+            com.music.bitchord.data.settings.AccentTheme.DOODLE_CAT ->
+                AppSettings.setThemeMode(com.music.bitchord.data.settings.ThemeMode.LIGHT)
+            com.music.bitchord.data.settings.AccentTheme.PHANTOM_THIEVES ->
+                AppSettings.setThemeMode(com.music.bitchord.data.settings.ThemeMode.DARK)
+            else -> {}
+        }
         _themeName.value = target.name
     }
 

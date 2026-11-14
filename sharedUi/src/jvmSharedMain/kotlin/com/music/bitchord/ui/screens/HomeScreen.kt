@@ -53,8 +53,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -200,7 +202,24 @@ fun HomeScreen(
             },
         ) {
             if (title != null) {
-                item { HomeTitle(title, festiveLogo = festiveLogo, onFestiveLogoClick = onFestiveLogoClick) }
+                item {
+                    HomeTitle(
+                        title = title,
+                        festiveLogo = festiveLogo,
+                        onFestiveLogoClick = onFestiveLogoClick,
+                        onQuickPlay = { pickIndex ->
+                            val shelves = (state as? UiState.Success)?.data.orEmpty()
+                            val allItems = shelves.flatMap { shelf -> shelf.items.map { it to shelf.title } }
+                            if (allItems.isNotEmpty()) {
+                                val (targetItem, shelfTitle) = allItems[pickIndex.mod(allItems.size)]
+                                onItemClick(targetItem, shelfTitle)
+                            } else if (!topPicks.isNullOrEmpty() && onTopPickClick != null) {
+                                val pick = topPicks[pickIndex.mod(topPicks.size)]
+                                onTopPickClick(pick, pick.title)
+                            }
+                        },
+                    )
+                }
             }
             if (!signedIn && onSignIn != null) {
                 item {
@@ -329,8 +348,13 @@ private fun RecentShelf(
     currentSong: Song?,
     isPlaying: Boolean,
 ) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+
     Column(Modifier.padding(bottom = 26.dp)) {
-        RecentSectionHeader(title = localizeShelfTitle(shelf.title), subtitle = localizeShelfSubtitle(shelf.subtitle))
+        SectionHeader(title = shelf.title, subtitle = shelf.subtitle)
         val isCurrentItem = shelf.items.playingItemMatcher(currentSong)
         BoxWithConstraints {
             val columnWidth = trackColumnWidth(maxWidth)
@@ -339,23 +363,22 @@ private fun RecentShelf(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 items(shelf.items.chunked(RECENT_TRACKS_PER_COLUMN)) { column ->
-                    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
-                    val colShape = RoundedCornerShape(16.dp)
+                    val colShape = RoundedCornerShape(if (isDoodle) 16.dp else 10.dp)
+                    val colBg = if (isDoodle) {
+                        if (isDark) Color(0xFF1C1C20) else Color.White
+                    } else {
+                        Color(0xFF121216)
+                    }
+                    val colBorderColor = if (isDoodle) outlineColor else Color(0xFFE60012)
                     Column(
                         Modifier
                             .width(columnWidth)
                             .clip(colShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f))
+                            .background(colBg)
                             .border(
-                                0.8.dp,
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = if (isDark) 0.22f else 0.32f),
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                        Color.White.copy(alpha = 0.06f),
-                                    )
-                                ),
-                                colShape,
+                                width = if (isDoodle) 2.dp else 1.5.dp,
+                                color = colBorderColor,
+                                shape = colShape,
                             )
                             .padding(8.dp)
                     ) {
@@ -371,50 +394,6 @@ private fun RecentShelf(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun RecentSectionHeader(title: String, subtitle: String) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = PAGE_GUTTER, vertical = 10.dp)
-            .fillMaxWidth(),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .width(3.dp)
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                            )
-                        )
-                    )
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (subtitle.isNotBlank()) {
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 11.dp),
-            )
         }
     }
 }
@@ -456,21 +435,23 @@ fun CompactTrackRow(
     /** A music video: its thumbnail at 16:9 rather than squared off. */
     isVideo: Boolean = false,
 ) {
-    val rowShape = RoundedCornerShape(10.dp)
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+
+    val rowShape = RoundedCornerShape(if (isDoodle) 12.dp else 8.dp)
     val rowModifier = if (isCurrent) {
         Modifier
             .clip(rowShape)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .background(
+                if (isDoodle) outlineColor.copy(alpha = 0.08f)
+                else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+            )
             .border(
-                0.8.dp,
-                Brush.verticalGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.35f),
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
-                        Color.White.copy(alpha = 0.10f),
-                    )
-                ),
-                rowShape,
+                width = 1.5.dp,
+                color = if (isDoodle) outlineColor else Color(0xFFE60012),
+                shape = rowShape,
             )
             .padding(horizontal = 6.dp, vertical = 4.dp)
     } else {
@@ -491,16 +472,11 @@ fun CompactTrackRow(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(if (isDoodle) 10.dp else 6.dp))
                     .border(
-                        0.8.dp,
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.28f),
-                                Color.White.copy(alpha = 0.08f),
-                            )
-                        ),
-                        RoundedCornerShape(8.dp),
+                        width = if (isDoodle) 1.5.dp else 1.dp,
+                        color = if (isDoodle) outlineColor else (if (isCurrent) Color(0xFFE60012) else Color.White.copy(alpha = 0.35f)),
+                        shape = RoundedCornerShape(if (isDoodle) 10.dp else 6.dp),
                     )
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             )
@@ -510,7 +486,9 @@ fun CompactTrackRow(
         Column(Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.SemiBold,
+                ),
                 color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -591,11 +569,21 @@ private fun HomeTitle(
     modifier: Modifier = Modifier,
     festiveLogo: Boolean = false,
     onFestiveLogoClick: (() -> Unit)? = null,
+    onQuickPlay: (Int) -> Unit = {},
 ) {
     val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
     val isDoodle = themeName == "DOODLE_CAT"
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val outlineColor = if (isDark) Color.White else Color.Black
+    var selectedQuickPick by remember { mutableIntStateOf(0) }
+    val quickPickTitles = remember {
+        listOf(
+            "Midnight Purr Sonata in C#",
+            "Whisker Jazz Trio in Bb",
+            "Rooftop Rain & Warm Paws",
+            "Milk Bowl Lo-fi Beats",
+        )
+    }
 
     Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 4.dp)) {
         // Dual UI Switcher (Persona 5 <-> Doodle Cat)
@@ -634,8 +622,9 @@ private fun HomeTitle(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(if (isDark) Color(0xFF1C1C20) else Color(0xFFFBFBFC))
+                    .background(if (isDark) Color(0xFF1C1C20) else Color.White)
                     .border(2.dp, outlineColor, RoundedCornerShape(18.dp))
+                    .clickable { onQuickPlay(selectedQuickPick) }
                     .padding(14.dp),
             ) {
                 Row(
@@ -645,13 +634,13 @@ private fun HomeTitle(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "FEATURED AMBIENCE",
+                            text = "FEATURED AMBIENCE • TRACK 0${selectedQuickPick + 1}",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = if (isDark) Color.LightGray else Color.Gray,
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Midnight Purr Sonata in C#",
+                            text = quickPickTitles[selectedQuickPick],
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                             color = MaterialTheme.colorScheme.onBackground,
                         )
@@ -665,6 +654,7 @@ private fun HomeTitle(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(if (isDark) Color.White else Color.Black)
+                                .clickable { onQuickPlay(selectedQuickPick) }
                                 .padding(horizontal = 14.dp, vertical = 6.dp),
                         ) {
                             Text(
@@ -677,6 +667,7 @@ private fun HomeTitle(
                     Spacer(Modifier.width(8.dp))
                     DoodleCatMascot(
                         modifier = Modifier.size(76.dp),
+                        wearingHeadphones = true,
                         catColor = outlineColor,
                     )
                 }
@@ -685,6 +676,12 @@ private fun HomeTitle(
             Spacer(Modifier.height(10.dp))
 
             // Quick Picks 2x2 Grid (Little Explorers Layer 01)
+            val quickLabels = listOf(
+                0 to "01 Catnip Lo-fi",
+                1 to "02 Whisker Jazz",
+                2 to "03 Rooftop Rain",
+                3 to "04 Milk Bowl Beats",
+            )
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "Quick Picks",
@@ -692,71 +689,43 @@ private fun HomeTitle(
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
-                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
-                            .padding(vertical = 8.dp, horizontal = 10.dp),
+                quickLabels.chunked(2).forEachIndexed { rowIdx, rowItems ->
+                    if (rowIdx > 0) Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(
-                            text = "01 Catnip Lo-fi",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
-                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
-                            .padding(vertical = 8.dp, horizontal = 10.dp),
-                    ) {
-                        Text(
-                            text = "02 Whisker Jazz",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
-                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
-                            .padding(vertical = 8.dp, horizontal = 10.dp),
-                    ) {
-                        Text(
-                            text = "03 Rooftop Rain",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
-                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
-                            .padding(vertical = 8.dp, horizontal = 10.dp),
-                    ) {
-                        Text(
-                            text = "04 Milk Bowl Beats",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
+                        rowItems.forEach { (idx, label) ->
+                            val selected = selectedQuickPick == idx
+                            val pillBg = if (selected) {
+                                if (isDark) Color.White else Color.Black
+                            } else {
+                                if (isDark) Color(0xFF1E1E22) else Color.White
+                            }
+                            val pillFg = if (selected) {
+                                if (isDark) Color.Black else Color.White
+                            } else {
+                                MaterialTheme.colorScheme.onBackground
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .border(2.dp, outlineColor, RoundedCornerShape(14.dp))
+                                    .background(pillBg)
+                                    .clickable {
+                                        selectedQuickPick = idx
+                                        onQuickPlay(idx)
+                                    }
+                                    .padding(vertical = 9.dp, horizontal = 12.dp),
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = pillFg,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -823,6 +792,7 @@ private fun HomeTitle(
                         .clip(RoundedCornerShape(4.dp))
                         .background(Color(0xFFE60012))
                         .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                        .clickable { onQuickPlay(0) }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Text(
@@ -843,6 +813,7 @@ private fun HomeTitle(
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color(0xFF141418))
                     .border(1.5.dp, Color.White, RoundedCornerShape(8.dp))
+                    .clickable { onQuickPlay(0) }
                     .padding(12.dp),
             ) {
                 Column {
@@ -857,7 +828,7 @@ private fun HomeTitle(
                             color = Color(0xFFE60012),
                         )
                         Text(
-                            text = "ALL-OUT MIX",
+                            text = "▶ ALL-OUT MIX",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = Color.White,
                         )
@@ -1198,26 +1169,27 @@ fun VideoShelfCard(
     subtitleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     placeholderColor: Color = MaterialTheme.colorScheme.surfaceVariant,
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
-    val cardShape = RoundedCornerShape(16.dp)
-    val cardBorder = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isCurrent) 0.55f else if (isDark) 0.22f else 0.32f),
-            if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-            Color.White.copy(alpha = if (isCurrent) 0.20f else if (isDark) 0.06f else 0.12f),
-        )
-    )
-    val cardBg = if (isCurrent) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val cardShape = RoundedCornerShape(if (isDoodle) 16.dp else 10.dp)
+    val cardBorderColor = if (isDoodle) {
+        outlineColor
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f)
+        if (isCurrent) Color.White else Color(0xFFE60012)
+    }
+    val cardBg = if (isDoodle) {
+        if (isDark) Color(0xFF1C1C20) else Color.White
+    } else {
+        Color(0xFF121216)
     }
 
     Column(
         modifier = modifier
             .clip(cardShape)
             .background(cardBg)
-            .border(0.8.dp, cardBorder, cardShape)
+            .border(if (isDoodle) 2.dp else 1.5.dp, cardBorderColor, cardShape)
             .longPressMenuClickable(onClick = onClick, onLongClick = onLongPress)
             .contextClick(onLongPress)
             .padding(8.dp),
@@ -1226,16 +1198,11 @@ fun VideoShelfCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(VIDEO_ASPECT)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(if (isDoodle) 12.dp else 6.dp))
                 .border(
-                    0.8.dp,
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.25f),
-                            Color.White.copy(alpha = 0.06f),
-                        )
-                    ),
-                    RoundedCornerShape(12.dp),
+                    width = if (isDoodle) 1.5.dp else 1.dp,
+                    color = if (isDoodle) outlineColor else Color.White.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(if (isDoodle) 12.dp else 6.dp),
                 )
                 .background(placeholderColor),
         ) {
@@ -1252,7 +1219,9 @@ fun VideoShelfCard(
         Spacer(Modifier.height(8.dp))
         Text(
             text = item.title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.SemiBold,
+            ),
             color = if (isCurrent) MaterialTheme.colorScheme.primary else titleColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -1288,20 +1257,22 @@ internal fun NewShelfCard(
     /** A full-colour mark drawn in place of [icon], for a card that stands for a brand. */
     logo: DrawableResource? = null,
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
-    val cardShape = RoundedCornerShape(16.dp)
-    val cardBorder = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isDark) 0.22f else 0.32f),
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-            Color.White.copy(alpha = if (isDark) 0.06f else 0.12f),
-        )
-    )
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val cardShape = RoundedCornerShape(if (isDoodle) 16.dp else 10.dp)
+    val cardBg = if (isDoodle) {
+        if (isDark) Color(0xFF1C1C20) else Color.White
+    } else {
+        Color(0xFF121216)
+    }
+    val cardBorderColor = if (isDoodle) outlineColor else Color(0xFFE60012)
     Column(
         modifier = modifier
             .clip(cardShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f))
-            .border(0.8.dp, cardBorder, cardShape)
+            .background(cardBg)
+            .border(if (isDoodle) 2.dp else 1.5.dp, cardBorderColor, cardShape)
             .clickable(onClick = onClick)
             .padding(8.dp),
     ) {
@@ -1309,16 +1280,11 @@ internal fun NewShelfCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(if (isDoodle) 12.dp else 6.dp))
                 .border(
-                    0.8.dp,
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.25f),
-                            Color.White.copy(alpha = 0.06f),
-                        )
-                    ),
-                    RoundedCornerShape(12.dp),
+                    width = if (isDoodle) 1.5.dp else 1.dp,
+                    color = if (isDoodle) outlineColor else Color.White.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(if (isDoodle) 12.dp else 6.dp),
                 )
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
@@ -1344,7 +1310,9 @@ internal fun NewShelfCard(
         Spacer(Modifier.height(8.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.SemiBold,
+            ),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -1411,26 +1379,27 @@ internal fun ShelfCard(
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
-    val cardShape = RoundedCornerShape(16.dp)
-    val cardBorder = Brush.verticalGradient(
-        listOf(
-            Color.White.copy(alpha = if (isCurrent) 0.55f else if (isDark) 0.22f else 0.32f),
-            if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-            Color.White.copy(alpha = if (isCurrent) 0.20f else if (isDark) 0.06f else 0.12f),
-        )
-    )
-    val cardBg = if (isCurrent) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+    val cardShape = RoundedCornerShape(if (isDoodle) 16.dp else 10.dp)
+    val cardBorderColor = if (isDoodle) {
+        outlineColor
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f)
+        if (isCurrent) Color.White else Color(0xFFE60012)
+    }
+    val cardBg = if (isDoodle) {
+        if (isDark) Color(0xFF1C1C20) else Color.White
+    } else {
+        Color(0xFF121216)
     }
 
     Column(
         modifier = modifier
             .clip(cardShape)
             .background(cardBg)
-            .border(0.8.dp, cardBorder, cardShape)
+            .border(if (isDoodle) 2.dp else 1.5.dp, cardBorderColor, cardShape)
             .longPressMenuClickable(onClick = onClick, onLongClick = onLongPress)
             .contextClick(onLongPress)
             .padding(8.dp),
@@ -1444,14 +1413,9 @@ internal fun ShelfCard(
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .border(
-                            0.8.dp,
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.30f),
-                                    Color.White.copy(alpha = 0.08f),
-                                )
-                            ),
-                            RoundedCornerShape(12.dp),
+                            width = if (isDoodle) 1.5.dp else 1.dp,
+                            color = if (isDoodle) outlineColor else Color.White.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(12.dp),
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -1494,16 +1458,11 @@ internal fun ShelfCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(if (isDoodle) 12.dp else 6.dp))
                         .border(
-                            0.8.dp,
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.25f),
-                                    Color.White.copy(alpha = 0.06f),
-                                )
-                            ),
-                            RoundedCornerShape(12.dp),
+                            width = if (isDoodle) 1.5.dp else 1.dp,
+                            color = if (isDoodle) outlineColor else Color.White.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(if (isDoodle) 12.dp else 6.dp),
                         )
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
@@ -1533,7 +1492,9 @@ internal fun ShelfCard(
             }
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.SemiBold,
+                ),
                 color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

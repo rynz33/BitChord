@@ -87,6 +87,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -497,6 +498,11 @@ private fun SongRowContent(
     showSourceQuality: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+
     val titleColor by animateColorAsState(
         targetValue = if (isCurrent && !searchPlayingStyle) activeTint else MaterialTheme.colorScheme.onBackground,
         label = "song row title",
@@ -543,13 +549,16 @@ private fun SongRowContent(
                 } else {
                     Text(
                         text = "$trackNumber",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.Normal,
+                        ),
                         color = subtitleColor,
                         maxLines = 1,
                     )
                 }
             }
         } else {
+            val artCorner = RoundedCornerShape(if (isDoodle) 10.dp else 6.dp)
             Box(Modifier.trackArtSize(52.dp, song.isVideo)) {
                 AsyncImage(
                     model = com.music.bitchord.ui.player.rememberRemoteArtworkUrl(song)?.artworkAt(ROW_ART_PX),
@@ -557,8 +566,12 @@ private fun SongRowContent(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .matchParentSize()
-                        .clip(RoundedCornerShape(8.dp))
-                        .thumbnailBorder(RoundedCornerShape(8.dp))
+                        .clip(artCorner)
+                        .border(
+                            width = if (isDoodle) 1.5.dp else 1.dp,
+                            color = if (isDoodle) outlineColor else (if (isCurrent) Color(0xFFE60012) else Color.White.copy(alpha = 0.35f)),
+                            shape = artCorner,
+                        )
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
                 if (searchPlayingStyle && isCurrent && isPlaying) {
@@ -573,7 +586,9 @@ private fun SongRowContent(
         Column(Modifier.weight(1f)) {
             ExplicitSongTitle(
                 song = song,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.SemiBold,
+                ),
                 color = titleColor,
             )
             Spacer(Modifier.height(2.dp))

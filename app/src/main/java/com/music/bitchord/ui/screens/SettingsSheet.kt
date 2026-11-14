@@ -595,6 +595,13 @@ fun SettingsScreen(
             // The categories, each a page of its own — until there is a query,
             // when their rows answer here instead (below).
             if (!searching) {
+                SettingsGroup(header = "UI Style / Tema Utama") {
+                    UiThemeStyleSelector(
+                        accentTheme = accentTheme,
+                        onOpenAllPalettes = { onOpenChoice(SettingsChoiceKind.ACCENT_THEME) },
+                        modifier = Modifier.padding(horizontal = ROW_INSET, vertical = 14.dp),
+                    )
+                }
                 SettingsCategoryList(onOpen = onOpenSection)
                 if (watchAvailable) {
                     SettingsGroup {
@@ -1002,6 +1009,26 @@ fun SettingsScreen(
         }
 
         if (shows(SettingsCategory.APPEARANCE)) SearchableSettingsGroup(search, header = stringResource(R.string.appearance)) {
+            row("UI Style / Tema Utama", "tema", "theme", "persona", "phantom", "doodle", "cat", "kucing", "style") {
+                SettingsRow(
+                    icon = Icons.Rounded.AutoAwesome,
+                    title = "UI Style / Tema Utama",
+                    subtitle = if (accentTheme == AccentTheme.DOODLE_CAT) {
+                        "Little Explorers • Doodle Black Cat (Monochrome Paper)"
+                    } else if (accentTheme == AccentTheme.PHANTOM_THIEVES) {
+                        "Persona 5 • Phantom Thieves (Crimson & Black)"
+                    } else {
+                        accentTheme.description
+                    },
+                    value = accentTheme.label,
+                    onClick = { onOpenChoice(SettingsChoiceKind.ACCENT_THEME) },
+                )
+                UiThemeStyleSelector(
+                    accentTheme = accentTheme,
+                    onOpenAllPalettes = null,
+                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                )
+            }
             val themeTitle = stringResource(R.string.theme)
             row(themeTitle, "dark mode", "light mode") {
                 SettingsRow(icon = Icons.Rounded.Brightness4, title = themeTitle)
@@ -1013,7 +1040,7 @@ fun SettingsScreen(
                 )
             }
             val colorThemeTitle = stringResource(R.string.color_theme)
-            row(colorThemeTitle, "accent", "palette", "custom theme", "neon", "violet", "cyan") {
+            row(colorThemeTitle, "accent", "palette", "custom theme", "neon", "violet", "cyan", "doodle", "persona") {
                 SettingsRow(
                     icon = Icons.Rounded.Gradient,
                     title = colorThemeTitle,
@@ -1023,7 +1050,9 @@ fun SettingsScreen(
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
+                    modifier = Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(start = ROW_INSET, end = ROW_INSET, bottom = 14.dp),
                 ) {
                     AccentTheme.entries.forEach { palette ->
                         val isSelected = palette == accentTheme
@@ -1035,12 +1064,12 @@ fun SettingsScreen(
                                 .clip(CircleShape)
                                 .background(swatchColor)
                                 .border(
-                                    width = if (isSelected) 3.dp else 1.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onBackground else Color.Transparent,
+                                    width = if (isSelected) 3.dp else 1.5.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                                     shape = CircleShape,
                                 )
                                 .clickable {
-                                    AppSettings.setAccentTheme(palette)
+                                    applyAccentThemeWithMode(palette)
                                 },
                         ) {
                             if (isSelected) {
@@ -2509,11 +2538,21 @@ internal fun SettingsGroup(
     topSpacing: Dp = 26.dp,
     content: @Composable () -> Unit,
 ) {
+    val accentTheme by AppSettings.accentTheme.collectAsStateWithLifecycle()
+    val isDoodle = accentTheme == AccentTheme.DOODLE_CAT
+    val isPhantom = accentTheme == AccentTheme.PHANTOM_THIEVES
+    val groupShape = if (isDoodle) RoundedCornerShape(18.dp) else GroupShape
+
     if (header != null) {
         Text(
             text = header.uppercase(Locale.ROOT),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (isDoodle || isPhantom) FontWeight.ExtraBold else FontWeight.Normal,
+            color = when {
+                isDoodle -> MaterialTheme.colorScheme.onBackground
+                isPhantom -> Color(0xFFE60012)
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            },
             modifier = Modifier.padding(
                 start = GROUP_INSET + 4.dp,
                 end = GROUP_INSET,
@@ -2528,8 +2567,17 @@ internal fun SettingsGroup(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = GROUP_INSET)
-            .clip(GroupShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .clip(groupShape)
+            .background(
+                if (isDoodle) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant,
+            )
+            .then(
+                when {
+                    isDoodle -> Modifier.border(2.dp, MaterialTheme.colorScheme.onBackground, groupShape)
+                    isPhantom -> Modifier.border(1.5.dp, Color(0xFFE60012).copy(alpha = 0.78f), groupShape)
+                    else -> Modifier
+                },
+            ),
     ) {
         content()
     }
@@ -2549,10 +2597,21 @@ internal fun SettingsGroup(
 
 @Composable
 internal fun RowDivider() {
+    val accentTheme by AppSettings.accentTheme.collectAsStateWithLifecycle()
+    val isDoodle = accentTheme == AccentTheme.DOODLE_CAT
+    val isPhantom = accentTheme == AccentTheme.PHANTOM_THIEVES
     HorizontalDivider(
         modifier = Modifier.padding(start = TEXT_INSET),
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outline,
+        thickness = when {
+            isDoodle -> 1.dp
+            isPhantom -> 0.8.dp
+            else -> 0.5.dp
+        },
+        color = when {
+            isDoodle -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.16f)
+            isPhantom -> Color(0xFFE60012).copy(alpha = 0.28f)
+            else -> MaterialTheme.colorScheme.outline
+        },
     )
 }
 
@@ -3021,12 +3080,187 @@ fun SettingsChoicePage(
                     detail = { it.description },
                     footer = stringResource(R.string.color_theme_subtitle),
                 ) { palette ->
-                    AppSettings.setAccentTheme(palette)
+                    applyAccentThemeWithMode(palette)
                     onChosen()
                 }
             }
         }
         Spacer(Modifier.height(32.dp))
+    }
+}
+
+private fun applyAccentThemeWithMode(palette: AccentTheme) {
+    AppSettings.setAccentTheme(palette)
+    when (palette) {
+        AccentTheme.DOODLE_CAT -> AppSettings.setThemeMode(ThemeMode.LIGHT)
+        AccentTheme.PHANTOM_THIEVES -> AppSettings.setThemeMode(ThemeMode.DARK)
+        else -> {}
+    }
+}
+
+@Composable
+private fun UiThemeStyleSelector(
+    accentTheme: AccentTheme,
+    onOpenAllPalettes: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val isPhantom = accentTheme == AccentTheme.PHANTOM_THIEVES
+    val isDoodle = accentTheme == AccentTheme.DOODLE_CAT
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Card 1: Persona 5 (Phantom Thieves)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF09090B))
+                    .border(
+                        width = if (isPhantom) 2.5.dp else 1.5.dp,
+                        color = Color(0xFFE60012),
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                    .clickable { applyAccentThemeWithMode(AccentTheme.PHANTOM_THIEVES) }
+                    .padding(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFE60012))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    ) {
+                        Text(
+                            text = "🎭 PHANTOM UI",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                        )
+                    }
+                    if (isPhantom) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFE60012)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(13.dp),
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "Persona 5",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                )
+                Text(
+                    text = "Crimson Red & Phantom Black comic UI",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.72f),
+                    maxLines = 2,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+
+            // Card 2: Doodle Black Cat (Little Explorers)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFFAFAFA))
+                    .border(
+                        width = if (isDoodle) 2.5.dp else 2.dp,
+                        color = Color(0xFF18181B),
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                    .clickable { applyAccentThemeWithMode(AccentTheme.DOODLE_CAT) }
+                    .padding(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF18181B))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                    ) {
+                        Text(
+                            text = "🐱 DOODLE UI",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                        )
+                    }
+                    if (isDoodle) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF18181B)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(13.dp),
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "Doodle Cat",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF18181B),
+                )
+                Text(
+                    text = "Monochrome Paper & Cat Line-Art UI",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF18181B).copy(alpha = 0.72f),
+                    maxLines = 2,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+        if (onOpenAllPalettes != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onOpenAllPalettes)
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "Aktif: ${accentTheme.label} • Lihat semua tema warna",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Chevron()
+            }
+        }
     }
 }
 

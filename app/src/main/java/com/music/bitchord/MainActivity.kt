@@ -32,6 +32,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,7 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.Upgrade
 import com.music.bitchord.data.listentogether.ServerConnectionState
@@ -154,6 +156,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.music.bitchord.data.model.durationMillis
 import com.music.bitchord.data.scrobbling.LastFM
+import com.music.bitchord.data.settings.AccentTheme
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.data.settings.BitPerfectMode
 import com.music.bitchord.ui.AddonBlockedAlert
@@ -413,7 +416,11 @@ class MainActivity : AppCompatActivity() {
                 applyPerformanceMode(highPerformance, performanceRefreshRate, composeView)
             }
             val darkTheme = when (theme) {
-                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.SYSTEM -> when (accentTheme) {
+                    AccentTheme.DOODLE_CAT -> false
+                    AccentTheme.PHANTOM_THIEVES -> true
+                    else -> isSystemInDarkTheme()
+                }
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
@@ -4113,19 +4120,60 @@ private fun BitChordApp(
                             if (route != AppRoute.Downloads) {
                                 TopBarDownloadButton(onClick = { navigator.push(AppRoute.Downloads) })
                             }
-                            // Not on a release page, whose pill already carries
-                            // three of its own controls — Apple Music leaves the
-                            // profile off its album pages too.
-                            if (!isReleaseDetail) TopBarAccountButton(
-                                account = account,
-                                onClick = {
-                                    if (signedIn) {
-                                        viewModel.loadChannels()
-                                        showAccountSelector = true
-                                    } else navigator.push(AppRoute.Settings)
-                                },
-                                onSwipeProfile = { forward -> viewModel.stepProfile(forward) },
-                            )
+                            if (!isReleaseDetail) {
+                                val currentAccent by AppSettings.accentTheme.collectAsStateWithLifecycle()
+                                val isDoodleTopBar = currentAccent == AccentTheme.DOODLE_CAT
+                                val isPhantomTopBar = currentAccent == AccentTheme.PHANTOM_THIEVES
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .padding(end = 6.dp)
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when {
+                                                isDoodleTopBar -> MaterialTheme.colorScheme.surface
+                                                isPhantomTopBar -> Color(0xFF09090B).copy(alpha = 0.85f)
+                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+                                            },
+                                        )
+                                        .border(
+                                            width = when {
+                                                isDoodleTopBar -> 2.dp
+                                                isPhantomTopBar -> 1.5.dp
+                                                else -> 0.8.dp
+                                            },
+                                            color = when {
+                                                isDoodleTopBar -> MaterialTheme.colorScheme.onBackground
+                                                isPhantomTopBar -> Color(0xFFE60012)
+                                                else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                                            },
+                                            shape = CircleShape,
+                                        )
+                                        .clickable { navigator.push(AppRoute.Settings) },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Settings,
+                                        contentDescription = stringResource(R.string.settings),
+                                        tint = when {
+                                            isDoodleTopBar -> MaterialTheme.colorScheme.onBackground
+                                            isPhantomTopBar -> Color(0xFFE60012)
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        },
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                TopBarAccountButton(
+                                    account = account,
+                                    onClick = {
+                                        if (signedIn) {
+                                            viewModel.loadChannels()
+                                            showAccountSelector = true
+                                        } else navigator.push(AppRoute.Settings)
+                                    },
+                                    onSwipeProfile = { forward -> viewModel.stepProfile(forward) },
+                                )
+                            }
                         }
                     },
                 )
