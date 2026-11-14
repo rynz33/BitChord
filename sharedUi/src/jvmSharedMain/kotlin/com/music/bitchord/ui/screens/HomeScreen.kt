@@ -23,6 +23,7 @@ import com.music.bitchord.ui.components.UiStyleSwitcher
 import com.music.bitchord.ui.components.DoodleCatMascot
 import com.music.bitchord.ui.components.DoodleSun
 import com.music.bitchord.ui.components.DoodleCloud
+import com.music.bitchord.ui.components.PersonaCutoutText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -515,50 +516,7 @@ fun CompactTrackRow(
  * font size rather than a fixed dp, so the two keep their proportion under the
  * system font scale.
  */
-@Composable
-private fun PersonaCutoutText(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        text.split(" ").forEachIndexed { wordIdx, word ->
-            if (wordIdx > 0) Spacer(Modifier.width(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                word.forEachIndexed { charIdx, char ->
-                    val isRed = (charIdx + wordIdx) % 2 == 1
-                    val tilt = when ((charIdx + wordIdx) % 4) {
-                        0 -> -2f
-                        1 -> 1.5f
-                        2 -> -1f
-                        else -> 2f
-                    }
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .graphicsLayer { rotationZ = tilt }
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(if (isRed) Color(0xFFE60012) else Color.White)
-                            .border(1.2.dp, Color.Black, RoundedCornerShape(3.dp))
-                            .size(24.dp),
-                    ) {
-                        Text(
-                            text = char.toString(),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Black,
-                                fontSize = 13.sp,
-                            ),
-                            color = if (isRed) Color.White else Color.Black,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
+
 
 /**
  * Persona 5 style HomeTitle with Take Your Heart header and Phantom Beats cutout.

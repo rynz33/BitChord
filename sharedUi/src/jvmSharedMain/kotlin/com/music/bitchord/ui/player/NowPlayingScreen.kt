@@ -159,6 +159,14 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.music.bitchord.ui.components.DoodleCloud
 import com.music.bitchord.ui.components.DoodleSun
+import com.music.bitchord.ui.components.PersonaCutoutText
+import com.music.bitchord.ui.components.PersonaVinylDiscCard
+import com.music.bitchord.ui.components.DoodleNowPlayingStudioCard
+import com.music.bitchord.ui.components.NowPlayingThemeBackdrop
+import com.music.bitchord.ui.components.PersonaTransportPlayButton
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
 import com.music.bitchord.ui.components.ExplicitBadge
 import com.music.bitchord.ui.components.VideoThumbnails
 import com.music.bitchord.ui.components.menuAnchor
@@ -765,76 +773,97 @@ private fun SlidingPlayerDeck(
 @Composable
 private fun DualUiNowPlayingBadge(
     isDoodle: Boolean,
+    isDark: Boolean,
     modifier: Modifier = Modifier,
 ) {
     if (isDoodle) {
         val pillShape = RoundedCornerShape(16.dp)
+        val outline = if (isDark) Color.White else Color.Black
+        val bg = if (isDark) Color(0xFF1C1C20) else Color.White
         Row(
             modifier = modifier
                 .shadow(2.dp, pillShape, clip = false)
                 .clip(pillShape)
-                .background(Color.White.copy(alpha = 0.94f))
-                .border(1.5.dp, Color.Black, pillShape)
-                .padding(horizontal = 12.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .background(bg.copy(alpha = 0.94f))
+                .border(1.5.dp, outline, pillShape)
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DoodleSun(
                 modifier = Modifier.size(18.dp),
-                color = Color.Black,
+                color = outline,
             )
             Text(
                 text = "NOW PLAYING STUDIO",
-                color = Color.Black,
+                color = outline,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 11.sp,
+                fontSize = 11.5.sp,
                 letterSpacing = 0.6.sp,
             )
             DoodleCloud(
                 modifier = Modifier.size(18.dp),
-                color = Color.Black,
+                color = outline,
             )
         }
     } else {
-        val badgeShape = RoundedCornerShape(4.dp)
-        Row(
-            modifier = modifier.graphicsLayer { rotationZ = -1.5f },
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
                 modifier = Modifier
-                    .shadow(3.dp, badgeShape, clip = false)
-                    .clip(badgeShape)
-                    .background(Color(0xFFE60012))
-                    .border(1.5.dp, Color.White, badgeShape)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center,
+                    .graphicsLayer { rotationZ = -1.2f }
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color.White)
+                    .border(1.dp, Color.Black, RoundedCornerShape(3.dp))
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
             ) {
                 Text(
-                    text = "03 // NOW AMBUSHING",
-                    color = Color.White,
+                    text = "03 // NOW PLAYING // ALL-OUT",
+                    color = Color.Black,
                     fontWeight = FontWeight.Black,
                     fontSize = 10.sp,
-                    letterSpacing = 0.6.sp,
+                    letterSpacing = 0.8.sp,
                 )
             }
-            Box(
-                modifier = Modifier
-                    .shadow(3.dp, badgeShape, clip = false)
-                    .clip(badgeShape)
-                    .background(Color(0xFF141418))
-                    .border(1.5.dp, Color.White, badgeShape)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center,
+            Spacer(Modifier.height(4.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "SHOWTIME!!",
-                    color = Color.White,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 10.sp,
-                    letterSpacing = 0.5.sp,
-                )
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = -2f }
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFFE60012))
+                        .border(1.5.dp, Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                ) {
+                    Text(
+                        text = "NOW AMBUSHING",
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 10.sp,
+                        letterSpacing = 0.6.sp,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = 1.5f }
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFF141418))
+                        .border(1.5.dp, Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                ) {
+                    Text(
+                        text = "LYRICS // ON",
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 10.sp,
+                        letterSpacing = 0.5.sp,
+                    )
+                }
             }
         }
     }
@@ -857,8 +886,12 @@ private fun FloatingCapsuleTransportRow(
     val haptics = rememberHaptics()
     val themeName by com.music.bitchord.ui.AppUi.host.currentThemeName.collectAsStateWithLifecycle()
     val isDoodle = themeName == "DOODLE_CAT"
-    val skipBtnBg = if (isDoodle) Color.White else Color(0xFF141418)
-    val skipBtnFg = if (isDoodle) Color.Black else Color.White
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+    val skipBtnBg = if (isDoodle) (if (isDark) Color(0xFF1C1C20) else Color.White) else Color(0xFF141418)
+    val skipBtnFg = if (isDoodle) (if (isDark) Color.White else Color.Black) else Color.White
+    val prevNextShape = if (isDoodle) CircleShape else RoundedCornerShape(12.dp)
+
     val playTouchSize = if (compact) 76.dp else 92.dp
     val playPillSize = if (compact) 60.dp else 76.dp
     val playGlyphSize = if (compact) 32.dp else 42.dp
@@ -880,15 +913,16 @@ private fun FloatingCapsuleTransportRow(
         // Previous button
         Box(
             modifier = Modifier
+                .graphicsLayer { if (!isDoodle) rotationZ = -2.5f }
                 .size(skipTouchSize),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
                     .size(skipPillSize)
-                    .clip(CircleShape)
+                    .clip(prevNextShape)
                     .background(skipBtnBg)
-                    .border(2.dp, skipBtnFg.copy(alpha = prevAlpha), CircleShape)
+                    .border(2.dp, skipBtnFg.copy(alpha = prevAlpha), prevNextShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -910,54 +944,62 @@ private fun FloatingCapsuleTransportRow(
             }
         }
 
-        // Play / Pause circular button
+        // Play / Pause button
         Box(
             modifier = Modifier
                 .size(playTouchSize),
             contentAlignment = Alignment.Center,
         ) {
-            val playBtnFill = if (isDoodle) Color.Black else MaterialTheme.colorScheme.primary
-            val playBtnBorder = if (isDoodle) Color.White else (if (playBtnFill == Color.White) Color.Black else Color.White)
-            val playGlyphTint = if (isDoodle) Color.White else MaterialTheme.colorScheme.onPrimary
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .size(playPillSize)
-                        .clip(CircleShape)
-                        .background(playBtnFill)
-                        .border(3.dp, playBtnBorder, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(
-                        color = playGlyphTint,
-                        strokeWidth = 3.dp,
-                        modifier = Modifier.size(if (compact) 28.dp else 34.dp),
-                    )
+            if (isDoodle) {
+                val doodlePlayFill = if (isDark) Color.White else Color.Black
+                val doodlePlayIconTint = if (isDark) Color.Black else Color.White
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .size(playPillSize)
+                            .clip(CircleShape)
+                            .background(doodlePlayFill)
+                            .border(3.dp, doodlePlayIconTint, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            color = doodlePlayIconTint,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(if (compact) 28.dp else 34.dp),
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(playPillSize)
+                            .clip(CircleShape)
+                            .background(doodlePlayFill)
+                            .border(3.dp, doodlePlayIconTint, CircleShape)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
+                                onPlayPause()
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(if (isPlaying) Res.drawable.ic_player_pause else Res.drawable.ic_player_play),
+                            contentDescription = stringResource(if (isPlaying) Res.string.pause else Res.string.play),
+                            tint = doodlePlayIconTint,
+                            modifier = Modifier.size(playGlyphSize),
+                        )
+                    }
                 }
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(playPillSize)
-                        .clip(CircleShape)
-                        .background(playBtnFill)
-                        .border(3.dp, playBtnBorder, CircleShape)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
-                            onPlayPause()
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(if (isPlaying) Res.drawable.ic_player_pause else Res.drawable.ic_player_play),
-                        contentDescription = stringResource(if (isPlaying) Res.string.pause else Res.string.play),
-                        tint = playGlyphTint,
-                        modifier = Modifier.size(playGlyphSize),
-                    )
-                }
+                // Persona 5 Big Crimson Red square button
+                PersonaTransportPlayButton(
+                    isPlaying = isPlaying,
+                    isLoading = isLoading,
+                    onPlayPause = onPlayPause,
+                    size = playPillSize,
+                )
             }
         }
 
@@ -968,15 +1010,16 @@ private fun FloatingCapsuleTransportRow(
         // Next button
         Box(
             modifier = Modifier
+                .graphicsLayer { if (!isDoodle) rotationZ = 2.5f }
                 .size(skipTouchSize),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
                     .size(skipPillSize)
-                    .clip(CircleShape)
+                    .clip(prevNextShape)
                     .background(skipBtnBg)
-                    .border(2.dp, skipBtnFg.copy(alpha = nextAlpha), CircleShape)
+                    .border(2.dp, skipBtnFg.copy(alpha = nextAlpha), prevNextShape)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -1129,6 +1172,7 @@ fun NowPlayingScreen(
     val haptics = rememberHaptics()
     val themeName by com.music.bitchord.ui.AppUi.host.currentThemeName.collectAsStateWithLifecycle()
     val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     // Remote tracks whose art lives inside the file resolve it here, once —
     // every surface below reads the same value rather than each triggering
@@ -2605,25 +2649,19 @@ fun NowPlayingScreen(
                     .then(dockHost)
                     .background(Color.Black),
             ) {
+                // Dual-UI custom backdrop: Persona 5 comic crimson/black slash or Doodle Cat paper grid
+                NowPlayingThemeBackdrop(
+                    isDoodle = isDoodle,
+                    isDark = isDark,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
                 // Three themes, one rule between them: a full-screen Spotify Canvas
                 // is its own backdrop until a panel opens.
-                //
-                // Simple: the blurred still cover the lyrics and queue use, under the
-                // main player as well — square or portrait clip, or still art. The
-                // banner and the clip each feather their own bottom edge into it.
-                // It is one image blurred once per song off the main thread, so
-                // nothing here is re-blurred while the player opens, closes or
-                // collapses, or while a clip plays over it.
-                //
-                // Legacy mesh is the whole backdrop on every page, so the lyrics and
-                // queue panels must not crossfade the blurred artwork over it.
-                //
-                // Default: the artwork's own mesh under the main player, with the
-                // blurred cover fading in over it for the lyrics and queue, which
-                // have no sleeve for a mesh to carry on from.
                 val legacyMeshBackdrop = !tabletArtworkBackdrop && !spotifyCanvasPresentation &&
-                    playerTheme == PlayerTheme.LEGACY
-                val artworkMeshBackdrop = !tabletArtworkBackdrop && playerTheme == PlayerTheme.DEFAULT
+                    playerTheme == PlayerTheme.LEGACY && !isDoodle && themeName != "PHANTOM_THIEVES"
+                val artworkMeshBackdrop = !tabletArtworkBackdrop && playerTheme == PlayerTheme.DEFAULT &&
+                    !isDoodle && themeName != "PHANTOM_THIEVES"
                 val fullArtworkBackdropAlpha by animateFloatAsState(
                     targetValue = if (
                         !legacyMeshBackdrop &&
@@ -3800,28 +3838,24 @@ fun NowPlayingScreen(
                             // fade away with Spotify's lower control deck rather than
                             // following the compact credits to the bottom edge.
                             WhileShown({ !collapsePastHalf }) {
-                                if (isDoodle || !heroMode) {
-                                    Box(
+                                if (isDoodle) {
+                                    DoodleNowPlayingStudioCard(
+                                        song = song,
+                                        artModel = art.request,
+                                        isDark = isDark,
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .border(
-                                                width = if (isDoodle) 2.5.dp else 1.5.dp,
-                                                color = if (isDoodle) Color.White else Color(0xFFE60012),
-                                                shape = RoundedCornerShape(8.dp),
-                                            )
-                                            .padding(if (isDoodle) 2.5.dp else 0.dp)
-                                            .then(
-                                                if (isDoodle) {
-                                                    Modifier.border(
-                                                        width = 2.dp,
-                                                        color = Color.Black,
-                                                        shape = RoundedCornerShape(6.dp),
-                                                    )
-                                                } else {
-                                                    Modifier
-                                                },
-                                            )
+                                            .graphicsLayer {
+                                                alpha = (1f - p() * 2f) * spotifyChromeAlpha
+                                            },
+                                    )
+                                } else {
+                                    PersonaVinylDiscCard(
+                                        song = song,
+                                        artModel = art.request,
+                                        isPlaying = isPlaying,
+                                        modifier = Modifier
+                                            .fillMaxSize()
                                             .graphicsLayer {
                                                 alpha = (1f - p() * 2f) * spotifyChromeAlpha
                                             },
@@ -3829,9 +3863,10 @@ fun NowPlayingScreen(
                                 }
                                 DualUiNowPlayingBadge(
                                     isDoodle = isDoodle,
+                                    isDark = isDark,
                                     modifier = Modifier
                                         .align(Alignment.TopCenter)
-                                        .padding(horizontal = 10.dp, vertical = 10.dp)
+                                        .offset(y = (-36).dp)
                                         .graphicsLayer {
                                             alpha = (1f - p() * 2f) * spotifyChromeAlpha
                                         },
@@ -3840,7 +3875,7 @@ fun NowPlayingScreen(
                                     song = song,
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
-                                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
                                         .graphicsLayer {
                                             alpha = (1f - p() * 2f) * spotifyChromeAlpha
                                         },
@@ -4031,52 +4066,103 @@ fun NowPlayingScreen(
                                 // it.
                                 Crossfade(
                                     targetState = song.title to song.artist,
-                                    // Round the fade and the marquee's edge masks, whose
-                                    // layers would otherwise hide the backdrop from it. The
-                                    // title is in it too and stays white: see [additiveChrome].
                                     modifier = Modifier.additiveChrome(LocalPlayerChrome.current),
                                     animationSpec = tween(durationMillis = 300),
                                     label = "playerCredits",
-                                ) {
+                                ) { (currentTitle, currentArtist) ->
                                     val scrolling = scrolls()
-                                    val artistColor = chromeWhite(0.55f)
-                                    Column {
-                                        MarqueeText(
-                                            text = song.title,
-                                            style = MaterialTheme.typography.titleLarge.copy(
-                                                fontSize = 20.sp,
-                                            ),
-                                            color = Color.White,
-                                            enabled = scrolling,
-                                            // Before the title, in the artist line's
-                                            // colour.
-                                            leading = if (song.isExplicit == true) {
-                                                { ExplicitBadge(color = artistColor) }
+                                    if (isDoodle) {
+                                        val titleColor = if (isDark) Color.White else Color(0xFF18181B)
+                                        val artistColor = if (isDark) Color(0xFFA1A1AA) else Color(0xFF71717A)
+                                        Column {
+                                            MarqueeText(
+                                                text = currentTitle,
+                                                style = MaterialTheme.typography.titleLarge.copy(
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 20.sp,
+                                                    letterSpacing = (-0.3).sp,
+                                                ),
+                                                color = titleColor,
+                                                enabled = scrolling,
+                                                leading = if (song.isExplicit == true) {
+                                                    { ExplicitBadge(color = artistColor) }
+                                                } else {
+                                                    null
+                                                },
+                                                onOverflowChange = { titleOverflowing = it },
+                                                modifier = Modifier.opensPage(song.albumId, onOpenAlbum),
+                                            )
+                                            Spacer(Modifier.height(2.dp))
+                                            ArtistCreditsMarquee(
+                                                text = currentArtist,
+                                                credits = remember(currentArtist, song.artists, song.artistId) {
+                                                    artistCredits(currentArtist, song.artists, song.artistId)
+                                                },
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                ),
+                                                color = artistColor,
+                                                enabled = scrolling,
+                                                startDelayMillis = if (titleOverflowing) MARQUEE_ARTIST_STAGGER_MS else 0L,
+                                                onOpenArtist = onOpenArtist,
+                                            )
+                                        }
+                                    } else {
+                                        // Persona 5 Theme
+                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            if (currentTitle.length <= 16 && !scrolling) {
+                                                PersonaCutoutText(
+                                                    text = currentTitle.uppercase(),
+                                                    tileSize = 24.dp,
+                                                    fontSize = 13.sp,
+                                                )
                                             } else {
-                                                null
-                                            },
-                                            onOverflowChange = { titleOverflowing = it },
-                                            // Only the tracks YouTube hands us a browse id for
-                                            // lead anywhere; the rest stay plain text.
-                                            modifier = Modifier.opensPage(song.albumId, onOpenAlbum),
-                                        )
-                                        ArtistCreditsMarquee(
-                                            text = song.artist,
-                                            credits = remember(song.artist, song.artists, song.artistId) {
-                                                artistCredits(song.artist, song.artists, song.artistId)
-                                            },
-                                            style = MaterialTheme.typography.titleLarge.copy(
-                                                fontWeight = FontWeight.W500,
-                                                fontSize = 20.sp,
-                                            ),
-                                            color = artistColor,
-                                            enabled = scrolling,
-                                            // A title that's also scrolling gets to go first —
-                                            // starting together reads as clutter, so the artist
-                                            // waits a beat before it joins in.
-                                            startDelayMillis = if (titleOverflowing) MARQUEE_ARTIST_STAGGER_MS else 0L,
-                                            onOpenArtist = onOpenArtist,
-                                        )
+                                                MarqueeText(
+                                                    text = currentTitle.uppercase(),
+                                                    style = MaterialTheme.typography.titleLarge.copy(
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 21.sp,
+                                                        letterSpacing = 0.8.sp,
+                                                    ),
+                                                    color = Color.White,
+                                                    enabled = scrolling,
+                                                    leading = if (song.isExplicit == true) {
+                                                        { ExplicitBadge(color = Color(0xFFE60012)) }
+                                                    } else {
+                                                        null
+                                                    },
+                                                    onOverflowChange = { titleOverflowing = it },
+                                                    modifier = Modifier.opensPage(song.albumId, onOpenAlbum),
+                                                )
+                                            }
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .graphicsLayer { rotationZ = -1f }
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(Color.White)
+                                                        .border(1.2.dp, Color.Black, RoundedCornerShape(4.dp))
+                                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                                        .clickable {
+                                                            if (song.artistId != null) onOpenArtist(song.artistId, song.artist)
+                                                        },
+                                                ) {
+                                                    Text(
+                                                        text = currentArtist.uppercase(),
+                                                        color = Color.Black,
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 11.sp,
+                                                        letterSpacing = 0.5.sp,
+                                                        maxLines = 1,
+                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -4089,15 +4175,48 @@ fun NowPlayingScreen(
                             // device's own Liked playlist and needs no account.
                             if (signedIn || song.localUri != null) {
                                 val liked = likeStatus == LikeStatus.LIKE
-                                CircleGlyph(
-                                    icon = if (liked) BitChordIcons.StarFilled else BitChordIcons.Star,
-                                    contentDescription = stringResource(
-                                        if (liked) Res.string.remove_from_liked else Res.string.like,
-                                    ),
-                                    onClick = onToggleLike,
-                                    active = liked,
-                                    haptic = if (liked) Haptic.ToggleOff else Haptic.ToggleOn,
-                                )
+                                if (isDoodle) {
+                                    val heartBorder = if (isDark) Color.White else Color.Black
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(if (liked) (if (isDark) Color.White else Color.Black) else Color.Transparent)
+                                            .border(1.8.dp, heartBorder, CircleShape)
+                                            .clickable { onToggleLike() },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                                            contentDescription = stringResource(
+                                                if (liked) Res.string.remove_from_liked else Res.string.like,
+                                            ),
+                                            tint = if (liked) (if (isDark) Color.Black else Color.White) else heartBorder,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .graphicsLayer { rotationZ = 2.5f }
+                                            .size(38.dp)
+                                            .shadow(4.dp, RoundedCornerShape(6.dp), clip = false)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(if (liked) Color(0xFFE60012) else Color(0xFF141418))
+                                            .border(1.5.dp, Color.White, RoundedCornerShape(6.dp))
+                                            .clickable { onToggleLike() },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                                            contentDescription = stringResource(
+                                                if (liked) Res.string.remove_from_liked else Res.string.like,
+                                            ),
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
+                                }
                                 Spacer(Modifier.width(8.dp))
                             }
                             // While the lyrics are up the menu glyph becomes the share
@@ -4342,6 +4461,8 @@ fun NowPlayingScreen(
                     )
                     val deckShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
                     val reduceBlur by PlayerSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
+                    val deckBgColor = if (isDoodle) (if (isDark) Color(0xFF141416) else Color(0xFFFAFAFA)) else Color(0xFF0D0D10)
+                    val deckBorderColor = if (isDoodle) (if (isDark) Color.White else Color.Black) else Color(0xFFE60012)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -4355,59 +4476,8 @@ fun NowPlayingScreen(
                             }
                             .fillMaxWidth()
                             .clip(deckShape)
-                            .then(
-                                if (reduceBlur) {
-                                    Modifier.background(Color.Black.copy(alpha = 0.55f), deckShape)
-                                } else {
-                                    Modifier
-                                        .optimizedHazeEffect(
-                                            state = playerHaze,
-                                            style = HazeMaterials.ultraThin(Color.Black.copy(alpha = 0.30f)),
-                                        )
-                                        .background(
-                                            Brush.verticalGradient(
-                                                listOf(
-                                                    Color.White.copy(alpha = 0.12f),
-                                                    Color.White.copy(alpha = 0.03f),
-                                                    Color.Black.copy(alpha = 0.18f),
-                                                ),
-                                            ),
-                                            deckShape,
-                                        )
-                                },
-                            )
-                            // Subtle translucent white glass border (0.8.dp, 12-18% alpha)
-                            .border(
-                                width = 0.8.dp,
-                                brush = Brush.verticalGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.18f),
-                                        Color.White.copy(alpha = 0.10f),
-                                        Color.Transparent,
-                                    ),
-                                ),
-                                shape = deckShape,
-                            )
-                            // Dynamic ambient glass sheen
-                            .drawWithContent {
-                                drawContent()
-                                val sheenWidth = size.width * 0.40f
-                                val startX = deckSheenPhase * size.width - sheenWidth / 2f
-                                drawRoundRect(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(
-                                            Color.Transparent,
-                                            Color.White.copy(alpha = 0.03f),
-                                            Color.White.copy(alpha = 0.09f),
-                                            Color.Transparent,
-                                        ),
-                                        start = Offset(startX, 0f),
-                                        end = Offset(startX + sheenWidth, size.height),
-                                    ),
-                                    size = size,
-                                    cornerRadius = CornerRadius(28.dp.toPx()),
-                                )
-                            }
+                            .background(deckBgColor, deckShape)
+                            .border(2.dp, deckBorderColor, deckShape)
                             .padding(top = 10.dp, bottom = 4.dp),
                     ) {
                     Column(

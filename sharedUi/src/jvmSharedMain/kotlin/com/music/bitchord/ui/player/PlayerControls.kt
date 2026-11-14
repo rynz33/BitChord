@@ -5,6 +5,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.BlendMode
+import com.music.bitchord.ui.components.PersonaBoxedTimestamp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.isSpecified
@@ -222,6 +224,20 @@ internal fun PlayerScrubber(
     // canvas needs.
     val mixBlend = PlayerSettings.smartMixBlend.collectAsStateWithLifecycle()
     val reduceAnimation by PlayerSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val themeName by com.music.bitchord.ui.AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isPersona = themeName == "PHANTOM_THIEVES" || !isDoodle
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+    val sliderActiveColor = when {
+        isDoodle -> if (isDark) Color.White else Color(0xFF18181B)
+        else -> Color(0xFFE60012)
+    }
+    val sliderInactiveColor = when {
+        isDoodle -> if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.15f)
+        else -> Color.White.copy(alpha = 0.25f)
+    }
+
     // One clock for the bar and the "Mixing" label, so they breathe on the same beat.
     val mixPulse = rememberMixPulse({ mixBlend.value }, enabled = !reduceAnimation)
     Column(Modifier.fillMaxWidth()) {
@@ -233,6 +249,8 @@ internal fun PlayerScrubber(
             mixing = mixing,
             mixPulse = mixPulse,
             transitionWindow = transitionWindow,
+            activeColor = sliderActiveColor,
+            inactiveColor = sliderInactiveColor,
         )
         Box(
             modifier = Modifier
@@ -241,22 +259,40 @@ internal fun PlayerScrubber(
                 // so pull the labels back up under it.
                 .offset(y = -SCRUBBER_LABEL_LIFT),
         ) {
-            // Drawn like the artist line: the same white, added the same way.
-            val timeColor = chromeWhite(0.55f)
-            Row(
-                modifier = Modifier.fillMaxWidth().additiveChrome(LocalPlayerChrome.current),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = formatTime((shown * durationMs).toLong()),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = timeColor,
-                )
-                Text(
-                    text = "-" + formatTime(durationMs - (shown * durationMs).toLong()),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = timeColor,
-                )
+            if (isPersona) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PersonaBoxedTimestamp(formatTime((shown * durationMs).toLong()))
+                    PersonaBoxedTimestamp(formatTime(durationMs))
+                }
+            } else {
+                val timeColor = if (isDoodle) {
+                    if (isDark) Color.White else Color(0xFF18181B)
+                } else {
+                    chromeWhite(0.55f)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().additiveChrome(LocalPlayerChrome.current),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = formatTime((shown * durationMs).toLong()),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.Normal,
+                        ),
+                        color = timeColor,
+                    )
+                    Text(
+                        text = if (isDoodle) formatTime(durationMs) else ("-" + formatTime(durationMs - (shown * durationMs).toLong())),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = if (isDoodle) FontWeight.Bold else FontWeight.Normal,
+                        ),
+                        color = timeColor,
+                    )
+                }
             }
             // Pinned to the box's own centre rather than squeezed into the gap
             // between the two timestamps: that gap's width changes by a digit's
@@ -541,6 +577,24 @@ internal fun VolumeRow(
     onValueChangeFinished: () -> Unit,
 ) {
     val chrome = LocalPlayerChrome.current
+    val themeName by com.music.bitchord.ui.AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+    val iconTint = when {
+        isDoodle -> if (isDark) Color.White.copy(alpha = 0.8f) else Color.Black.copy(alpha = 0.8f)
+        chrome -> VibrantChromeInk
+        else -> chromeWhite(0.5f)
+    }
+    val volumeActiveColor = when {
+        isDoodle -> if (isDark) Color.White else Color(0xFF18181B)
+        else -> Color(0xFFE60012)
+    }
+    val volumeInactiveColor = when {
+        isDoodle -> if (isDark) Color.White.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.15f)
+        else -> Color.White.copy(alpha = 0.22f)
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -548,7 +602,7 @@ internal fun VolumeRow(
         Icon(
             Icons.AutoMirrored.Rounded.VolumeDown,
             contentDescription = null,
-            tint = if (chrome) VibrantChromeInk else chromeWhite(0.5f),
+            tint = iconTint,
             modifier = Modifier.size(20.dp).vibrantChrome(chrome),
         )
         Spacer(Modifier.width(10.dp))
@@ -558,13 +612,15 @@ internal fun VolumeRow(
             onValueChangeFinished = onValueChangeFinished,
             idleHeight = 6.dp,
             activeHeight = 10.dp,
+            activeColor = volumeActiveColor,
+            inactiveColor = volumeInactiveColor,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(10.dp))
         Icon(
             Icons.AutoMirrored.Rounded.VolumeUp,
             contentDescription = null,
-            tint = if (chrome) VibrantChromeInk else chromeWhite(0.5f),
+            tint = iconTint,
             modifier = Modifier.size(20.dp).vibrantChrome(chrome),
         )
     }
