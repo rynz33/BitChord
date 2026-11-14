@@ -66,6 +66,39 @@ private val PhantomThievesLightColors = lightColorScheme(
     outlineVariant = Color(0xFFA1A1AA),
 )
 
+// 0B. Little Explorers Doodle Black Cat (Monochrome Line-Art Aesthetic)
+private val DoodleCatDarkColors = darkColorScheme(
+    primary = Color(0xFFFFFFFF),       // Pure White
+    onPrimary = Color(0xFF18181B),     // Jet Black
+    secondary = Color(0xFFF4F4F5),     // Crisp White
+    onSecondary = Color(0xFF18181B),
+    tertiary = Color(0xFFA1A1AA),
+    background = Color(0xFF121214),    // Dark Sketchboard
+    onBackground = Color(0xFFFFFFFF),  // Pure White
+    surface = Color(0xFF1C1C20),       // Deep Charcoal Card
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF27272A),
+    onSurfaceVariant = Color(0xFFA1A1AA),
+    outline = Color(0xFFFFFFFF),       // Bold White Outline
+    outlineVariant = Color(0xFF3F3F46),
+)
+
+private val DoodleCatLightColors = lightColorScheme(
+    primary = Color(0xFF18181B),       // Jet Black
+    onPrimary = Color.White,
+    secondary = Color(0xFF27272A),     // Charcoal Black
+    onSecondary = Color.White,
+    tertiary = Color(0xFF52525B),      // Slate Grey
+    background = Color(0xFFFAFAFA),    // Clean Paper White
+    onBackground = Color(0xFF18181B),  // Jet Black
+    surface = Color(0xFFFFFFFF),       // Pure White Card
+    onSurface = Color(0xFF18181B),     // Jet Black
+    surfaceVariant = Color(0xFFF4F4F5),
+    onSurfaceVariant = Color(0xFF71717A),
+    outline = Color(0xFF18181B),       // Bold 2dp Black Outline
+    outlineVariant = Color(0xFFE4E4E7),
+)
+
 // 1. Rynz Violet Glow (Flagship theme)
 private val VioletDarkColors = darkColorScheme(
     primary = Color(0xFFA78BFA),
@@ -254,6 +287,7 @@ private val MidnightOledLightColors = lightColorScheme(
 
 fun paletteFor(darkTheme: Boolean, accent: AccentTheme): ColorScheme = when (accent) {
     AccentTheme.PHANTOM_THIEVES -> if (darkTheme) PhantomThievesDarkColors else PhantomThievesLightColors
+    AccentTheme.DOODLE_CAT -> if (darkTheme) DoodleCatDarkColors else DoodleCatLightColors
     AccentTheme.VIOLET_GLOW -> if (darkTheme) VioletDarkColors else VioletLightColors
     AccentTheme.CYBER_CYAN -> if (darkTheme) CyberCyanDarkColors else CyberCyanLightColors
     AccentTheme.EMERALD_AURORA -> if (darkTheme) EmeraldAuroraDarkColors else EmeraldAuroraLightColors

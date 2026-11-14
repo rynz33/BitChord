@@ -20,6 +20,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import com.music.bitchord.ui.components.PillSegmentedControl
 import com.music.bitchord.ui.components.longPressMenuClickable
+import com.music.bitchord.ui.components.DoodleCatMascot
+import com.music.bitchord.ui.components.DoodleCloud
+import com.music.bitchord.ui.AppUi
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +61,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -140,29 +145,39 @@ fun FloatingFrostedSearchBar(
         ),
     )
 
-    val p5BarShape = RoundedCornerShape(6.dp)
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+
+    val barShape = if (isDoodle) RoundedCornerShape(18.dp) else RoundedCornerShape(6.dp)
+    val barBg = if (isDoodle) (if (isDark) Color(0xFF1E1E22) else Color.White) else Color(0xFF101014)
+    val barBorder = if (isDoodle) outlineColor else Color(0xFFE60012)
+    val btnBg = if (isDoodle) (if (isDark) Color.White else Color.Black) else Color(0xFFE60012)
+    val btnIconTint = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clip(p5BarShape)
-            .background(Color(0xFF101014))
-            .border(width = 2.dp, color = Color(0xFFE60012), shape = p5BarShape)
+            .clip(barShape)
+            .background(barBg)
+            .border(width = 2.dp, color = barBorder, shape = barShape)
             .padding(start = 7.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFFE60012))
+                .clip(if (isDoodle) RoundedCornerShape(14.dp) else RoundedCornerShape(4.dp))
+                .background(btnBg)
                 .clickable(enabled = query.isNotBlank(), onClick = submit),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = stringResource(Res.string.search),
-                tint = Color.White,
+                tint = btnIconTint,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -341,68 +356,104 @@ fun SearchScreen(
         // away with the results or recent searches beneath them.
         Column(modifier = Modifier.padding(top = topPadding)) {
             if (showField) {
-                // P5 Top Section Tag
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
+                val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+                val isDoodle = themeName == "DOODLE_CAT"
+                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+                val outlineColor = if (isDark) Color.White else Color.Black
+
+                if (isDoodle) {
+                    // Little Explorers Doodle Cat Search Header (Layer 02 in showcase)
+                    Row(
                         modifier = Modifier
-                            .graphicsLayer { rotationZ = -2f }
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color(0xFFE60012))
-                            .border(1.dp, Color.White, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 7.dp, vertical = 2.dp),
+                            .fillMaxWidth()
+                            .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(
-                            text = "02",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                            color = Color.White,
+                        Column {
+                            Text(
+                                text = "Layer 02 // List of Contents",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isDark) Color.LightGray else Color.Gray,
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = "List of Contents",
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                )
+                                DoodleCloud(Modifier.size(20.dp), color = outlineColor)
+                            }
+                        }
+                        DoodleCatMascot(
+                            modifier = Modifier.size(34.dp),
+                            catColor = outlineColor,
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Black)
-                            .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 9.dp, vertical = 3.dp),
+                } else {
+                    // P5 Top Section Tag
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                     ) {
-                        Text(
-                            text = "SEARCH // MEMENTOS",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                            color = Color.White,
-                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .graphicsLayer { rotationZ = -2f }
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color(0xFFE60012))
+                                .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 7.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                text = "02",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                                color = Color.White,
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color.Black)
+                                .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 9.dp, vertical = 3.dp),
+                        ) {
+                            Text(
+                                text = "SEARCH // MEMENTOS",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                                color = Color.White,
+                            )
+                        }
                     }
-                }
-                // P5 Radar Scan Header
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 8.dp),
-                ) {
-                    "RADAR SCAN".split(" ").forEachIndexed { wordIdx, word ->
-                        if (wordIdx > 0) Spacer(Modifier.width(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            word.forEachIndexed { charIdx, char ->
-                                val isRed = (charIdx + wordIdx) % 2 == 1
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(3.dp))
-                                        .background(if (isRed) Color(0xFFE60012) else Color.White)
-                                        .border(1.dp, Color.Black, RoundedCornerShape(3.dp))
-                                        .size(22.dp),
-                                ) {
-                                    Text(
-                                        text = char.toString(),
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            fontWeight = FontWeight.Black,
-                                            fontSize = 12.sp,
-                                        ),
-                                        color = if (isRed) Color.White else Color.Black,
-                                    )
+                    // P5 Radar Scan Header
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 8.dp),
+                    ) {
+                        "RADAR SCAN".split(" ").forEachIndexed { wordIdx, word ->
+                            if (wordIdx > 0) Spacer(Modifier.width(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                word.forEachIndexed { charIdx, char ->
+                                    val isRed = (charIdx + wordIdx) % 2 == 1
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(if (isRed) Color(0xFFE60012) else Color.White)
+                                            .border(1.dp, Color.Black, RoundedCornerShape(3.dp))
+                                            .size(22.dp),
+                                    ) {
+                                        Text(
+                                            text = char.toString(),
+                                            style = MaterialTheme.typography.titleSmall.copy(
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 12.sp,
+                                            ),
+                                            color = if (isRed) Color.White else Color.Black,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -418,7 +469,7 @@ fun SearchScreen(
                     } else if (searchingAddons) {
                         stringResource(Res.string.search_addons_hint)
                     } else {
-                        "TARGET SONG, ARTIST, BPM..."
+                        if (isDoodle) "Search songs, whiskers, lo-fi..." else "TARGET SONG, ARTIST, BPM..."
                     },
                     modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                 )

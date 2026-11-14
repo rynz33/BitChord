@@ -19,6 +19,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.luminance
 import com.music.bitchord.ui.components.longPressMenuClickable
+import com.music.bitchord.ui.components.UiStyleSwitcher
+import com.music.bitchord.ui.components.DoodleCatMascot
+import com.music.bitchord.ui.components.DoodleSun
+import com.music.bitchord.ui.components.DoodleCloud
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -588,119 +592,288 @@ private fun HomeTitle(
     festiveLogo: Boolean = false,
     onFestiveLogoClick: (() -> Unit)? = null,
 ) {
-    Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 6.dp)) {
-        // P5 Top Section Tag
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 6.dp),
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .graphicsLayer { rotationZ = -2f }
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE60012))
-                    .border(1.dp, Color.White, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 7.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = "01",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                    color = Color.White,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black)
-                    .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 9.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = "HOME // TAKE YOUR HEART",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = Color.White,
-                )
-            }
-        }
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
 
-        // P5 Wordmark Header
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xFF121216))
-                .border(2.dp, Color(0xFFE60012), RoundedCornerShape(10.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-        ) {
-            Column {
-                Text(
-                    text = "PHANTOM RADIO // LIVE",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                    color = Color(0xFFE60012),
-                )
-                Spacer(Modifier.height(4.dp))
-                PersonaCutoutText(text = "STEAL BEATS")
+    Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 4.dp)) {
+        // Dual UI Switcher (Persona 5 <-> Doodle Cat)
+        UiStyleSwitcher(activeTheme = themeName)
+
+        Spacer(Modifier.height(4.dp))
+
+        if (isDoodle) {
+            // Little Explorers Doodle Cat Presentation Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column {
+                    Text(
+                        text = "Little Explorers Academy",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (isDark) Color.LightGray else Color.DarkGray,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Presentation",
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        DoodleSun(Modifier.size(24.dp), color = outlineColor)
+                    }
+                }
             }
+
+            // Featured Ambience Card (Layer 01 in Little Explorers showcase)
             Box(
                 modifier = Modifier
-                    .graphicsLayer { rotationZ = 3f }
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE60012))
-                    .border(1.dp, Color.White, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(if (isDark) Color(0xFF1C1C20) else Color(0xFFFBFBFC))
+                    .border(2.dp, outlineColor, RoundedCornerShape(18.dp))
+                    .padding(14.dp),
             ) {
-                Text(
-                    text = "★ JOKER",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                    color = Color.White,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // Daily Calling Card Banner
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { rotationZ = -0.5f }
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF141418))
-                .border(1.5.dp, Color.White, RoundedCornerShape(8.dp))
-                .padding(12.dp),
-        ) {
-            Column {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "FEATURED AMBIENCE",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (isDark) Color.LightGray else Color.Gray,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Midnight Purr Sonata in C#",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = "Curated by Natalie Cooper • Prof. Whiskers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isDark) Color.White else Color.Black)
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = "▶ Play Now",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isDark) Color.Black else Color.White,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    DoodleCatMascot(
+                        modifier = Modifier.size(76.dp),
+                        catColor = outlineColor,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Quick Picks 2x2 Grid (Little Explorers Layer 01)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Quick Picks",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                            .padding(vertical = 8.dp, horizontal = 10.dp),
+                    ) {
+                        Text(
+                            text = "01 Catnip Lo-fi",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                            .padding(vertical = 8.dp, horizontal = 10.dp),
+                    ) {
+                        Text(
+                            text = "02 Whisker Jazz",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                            .padding(vertical = 8.dp, horizontal = 10.dp),
+                    ) {
+                        Text(
+                            text = "03 Rooftop Rain",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                            .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                            .padding(vertical = 8.dp, horizontal = 10.dp),
+                    ) {
+                        Text(
+                            text = "04 Milk Bowl Beats",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
+            }
+        } else {
+            // P5 Top Section Tag
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 6.dp),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = -2f }
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFFE60012))
+                        .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 7.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        text = "⚡ DAILY CALLING CARD",
+                        text = "01",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFFE60012),
-                    )
-                    Text(
-                        text = "ALL-OUT MIX",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
                     )
                 }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "LOOKING COOL, JOKER!",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                    color = Color.White,
-                )
-                Text(
-                    text = "Shibuya Underground Acid Jazz & Rebel Anthems Mix",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFD4D4D8),
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black)
+                        .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 9.dp, vertical = 3.dp),
+                ) {
+                    Text(
+                        text = "HOME // TAKE YOUR HEART",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        color = Color.White,
+                    )
+                }
+            }
+
+            // P5 Wordmark Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF121216))
+                    .border(2.dp, Color(0xFFE60012), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            ) {
+                Column {
+                    Text(
+                        text = "PHANTOM RADIO // LIVE",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                        color = Color(0xFFE60012),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    PersonaCutoutText(text = "STEAL BEATS")
+                }
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = 3f }
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color(0xFFE60012))
+                        .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = "★ JOKER",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                        color = Color.White,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Daily Calling Card Banner
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { rotationZ = -0.5f }
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF141418))
+                    .border(1.5.dp, Color.White, RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+            ) {
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "⚡ DAILY CALLING CARD",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFFE60012),
+                        )
+                        Text(
+                            text = "ALL-OUT MIX",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "LOOKING COOL, JOKER!",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                        color = Color.White,
+                    )
+                    Text(
+                        text = "Shibuya Underground Acid Jazz & Rebel Anthems Mix",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFD4D4D8),
+                    )
+                }
             }
         }
     }
@@ -719,32 +892,52 @@ private const val LOGO_ASPECT = 730f / 484f
 internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() -> Unit)? = null) {
     val displayTitle = localizeShelfTitle(title)
     val displaySubtitle = localizeShelfSubtitle(subtitle)
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
+
     Row(
         modifier = Modifier
             .padding(horizontal = PAGE_GUTTER, vertical = 8.dp)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .graphicsLayer { rotationZ = -2f }
-                .clip(RoundedCornerShape(3.dp))
-                .background(Color(0xFFE60012))
-                .border(1.dp, Color.White, RoundedCornerShape(3.dp))
-                .padding(horizontal = 9.dp, vertical = 3.dp),
-        ) {
-            Text(
-                text = displayTitle.uppercase(),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                color = Color.White,
-            )
+        if (isDoodle) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isDark) Color.White else Color.Black)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "★ $displayTitle",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = if (isDark) Color.Black else Color.White,
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .graphicsLayer { rotationZ = -2f }
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color(0xFFE60012))
+                    .border(1.dp, Color.White, RoundedCornerShape(3.dp))
+                    .padding(horizontal = 9.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = displayTitle.uppercase(),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color.White,
+                )
+            }
         }
         Spacer(Modifier.width(8.dp))
         if (displaySubtitle.isNotBlank()) {
             Text(
                 text = displaySubtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFA1A1AA),
+                color = if (isDark) Color.LightGray else Color.Gray,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
@@ -754,15 +947,16 @@ internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() 
         if (onShowAll != null) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(Color.White)
+                    .clip(RoundedCornerShape(if (isDoodle) 12.dp else 3.dp))
+                    .border(1.5.dp, if (isDoodle) outlineColor else Color.Transparent, RoundedCornerShape(if (isDoodle) 12.dp else 3.dp))
+                    .background(if (isDoodle) Color.Transparent else Color.White)
                     .clickable(onClick = onShowAll)
                     .padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
                 Text(
-                    text = "ALL TARGETS >",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                    color = Color.Black,
+                    text = if (isDoodle) "View All →" else "ALL TARGETS >",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = if (isDoodle) outlineColor else Color.Black,
                 )
             }
         }

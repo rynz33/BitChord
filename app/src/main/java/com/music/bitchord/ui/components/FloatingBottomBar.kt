@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.SolidColor
+import com.music.bitchord.data.settings.AccentTheme
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.ui.haptics.Haptic
 import com.music.bitchord.ui.haptics.rememberHaptics
@@ -275,6 +277,14 @@ fun FloatingBottomBar(
         ),
     )
 
+    val accentTheme by AppSettings.accentTheme.collectAsStateWithLifecycle()
+    val isDoodle = accentTheme == AccentTheme.DOODLE_CAT
+    val barBg = if (isDoodle) (if (isDark) Color(0xFF141416) else Color.White) else Color(0xFF0C0C0E)
+    val barBorder = if (isDoodle) (if (isDark) Color.White else Color.Black) else primaryColor
+    val pillBrush = if (isDoodle) SolidColor(if (isDark) Color.White else Color.Black) else indicatorFill
+    val itemSelectedTint = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White
+    val itemUnselectedTint = if (isDoodle) (if (isDark) Color(0xFFA1A1AA) else Color(0xFF71717A)) else Color.White.copy(alpha = 0.65f)
+
     Box(
         modifier = modifier
             .windowInsetsPadding(floatingBarInsets)
@@ -282,8 +292,8 @@ fun FloatingBottomBar(
             .padding(bottom = NAV_BAR_LIFT)
             .fillMaxWidth()
             .clip(pillShape)
-            .background(Color(0xFF0C0C0E))
-            .border(2.dp, primaryColor, pillShape)
+            .background(barBg)
+            .border(2.dp, barBorder, pillShape)
             .padding(horizontal = PILL_INSET, vertical = PILL_INSET),
     ) {
         if (tabWidthPx > 0f) {
@@ -302,7 +312,7 @@ fun FloatingBottomBar(
                         scaleY = 1f - lag * STRETCH * SQUASH
                     }
                     .clip(pillShape)
-                    .background(indicatorFill)
+                    .background(pillBrush)
                     .border(0.8.dp, indicatorBorder, pillShape),
             ) {
                 // Specular top highlight curve for liquid glass curvature
@@ -398,8 +408,8 @@ fun FloatingBottomBar(
                     tab = tab,
                     selected = index == selectedIndex,
                     glassSpec = glassSpec,
-                    selectedTint = Color.White,
-                    unselectedTint = Color.White.copy(alpha = 0.65f),
+                    selectedTint = itemSelectedTint,
+                    unselectedTint = itemUnselectedTint,
                     onClick = { onTabSelected(index) },
                     modifier = Modifier.weight(1f),
                 )

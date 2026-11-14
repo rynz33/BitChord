@@ -34,6 +34,12 @@ interface AppUiHost {
      */
     suspend fun releaseMotion(album: String, artist: String): CanvasArtwork? = null
 
+    /** Active theme name (e.g. PHANTOM_THIEVES, DOODLE_CAT). */
+    val currentThemeName: StateFlow<String> get() = kotlinx.coroutines.flow.MutableStateFlow("PHANTOM_THIEVES")
+
+    /** Select UI theme by name. */
+    fun selectTheme(themeName: String) {}
+
     /**
      * Apple Music's looping clip of the YouTube artist [browseId], billed as
      * [artistName], for Home's Top Picks. Null as for [releaseMotion].

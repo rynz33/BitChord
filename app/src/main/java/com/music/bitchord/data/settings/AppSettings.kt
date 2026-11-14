@@ -129,6 +129,7 @@ enum class ThemeMode(val label: String) {
 
 enum class AccentTheme(val label: String, val hexAccent: Long, val description: String) {
     PHANTOM_THIEVES("Phantom Thieves", 0xFFE60012, "Persona 5 high-contrast crimson red & phantom black"),
+    DOODLE_CAT("Doodle Black Cat", 0xFF18181B, "Little Explorers monochrome line-art & cute cat aesthetic"),
     VIOLET_GLOW("Rynz Violet", 0xFF8B5CF6, "Flagship vibrant violet with deep midnight undertones"),
     CYBER_CYAN("Cyber Cyan", 0xFF00E5FF, "Electric cyan & neon teal with futuristic obsidian contrast"),
     EMERALD_AURORA("Emerald Aurora", 0xFF10B981, "Vivid emerald green with mint ambient glow"),

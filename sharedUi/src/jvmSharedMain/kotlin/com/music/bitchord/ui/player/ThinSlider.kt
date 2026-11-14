@@ -298,29 +298,29 @@ fun ThinSlider(
                 val alpha = if (dragging) activeColor.alpha else mixPulse?.alpha(activeColor.alpha) ?: activeColor.alpha
                 val fillWidth = filled.coerceAtLeast(size.height * fillFactor).coerceAtMost(size.width)
 
-                // Persona 5 solid vibrant red progress fill
+                // Progress fill using activeColor
                 drawRoundRect(
-                    color = Color(0xFFE60012).copy(alpha = alpha),
+                    color = activeColor.copy(alpha = alpha),
                     size = Size(fillWidth, size.height),
                     cornerRadius = radius,
                 )
             }
 
-            // Persona 5 scrubber with stark white playhead & crimson border
+            // Scrubber playhead with primary theme accent
             if (fillFactor > 0f && fraction > 0f) {
                 val playheadX = (size.width * fraction * fillFactor).coerceIn(size.height / 2f, size.width - size.height / 2f)
                 val centerY = size.height / 2f
                 val baseHeadRadius = size.height / 2f
                 val playheadRadius = baseHeadRadius + 1.dp.toPx() + 3.dp.toPx() * playheadExpansion
 
-                // Stark white thumb with red border
+                // Stark white thumb with accent border
                 drawCircle(
                     color = Color.White,
                     radius = playheadRadius,
                     center = Offset(playheadX, centerY),
                 )
                 drawCircle(
-                    color = Color(0xFFE60012),
+                    color = activeColor,
                     radius = playheadRadius,
                     center = Offset(playheadX, centerY),
                     style = Stroke(width = 2.dp.toPx()),

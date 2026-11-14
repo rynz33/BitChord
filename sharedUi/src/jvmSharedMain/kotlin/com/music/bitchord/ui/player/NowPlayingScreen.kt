@@ -827,17 +827,21 @@ private fun FloatingCapsuleTransportRow(
                 .size(playTouchSize),
             contentAlignment = Alignment.Center,
         ) {
+            val playBtnFill = MaterialTheme.colorScheme.primary
+            val playBtnBorder = if (playBtnFill == Color.White) Color.Black else Color.White
+            val playGlyphTint = MaterialTheme.colorScheme.onPrimary
+
             if (isLoading) {
                 Box(
                     modifier = Modifier
                         .size(playPillSize)
                         .clip(CircleShape)
-                        .background(Color(0xFFE60012))
-                        .border(3.dp, Color.White, CircleShape),
+                        .background(playBtnFill)
+                        .border(3.dp, playBtnBorder, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = playGlyphTint,
                         strokeWidth = 3.dp,
                         modifier = Modifier.size(if (compact) 28.dp else 34.dp),
                     )
@@ -847,8 +851,8 @@ private fun FloatingCapsuleTransportRow(
                     modifier = Modifier
                         .size(playPillSize)
                         .clip(CircleShape)
-                        .background(Color(0xFFE60012))
-                        .border(3.dp, Color.White, CircleShape)
+                        .background(playBtnFill)
+                        .border(3.dp, playBtnBorder, CircleShape)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -861,7 +865,7 @@ private fun FloatingCapsuleTransportRow(
                     Icon(
                         painter = painterResource(if (isPlaying) Res.drawable.ic_player_pause else Res.drawable.ic_player_play),
                         contentDescription = stringResource(if (isPlaying) Res.string.pause else Res.string.play),
-                        tint = Color.White,
+                        tint = playGlyphTint,
                         modifier = Modifier.size(playGlyphSize),
                     )
                 }

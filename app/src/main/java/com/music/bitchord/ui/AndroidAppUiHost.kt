@@ -10,12 +10,38 @@ import com.music.bitchord.data.canvas.CanvasArtwork
 import com.music.bitchord.data.canvas.CanvasRepository
 import com.music.bitchord.data.settings.AppSettings
 import com.music.bitchord.download.Downloads
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /** The shared pages' settings and downloads, answered from the phone's own stores. */
 object AndroidAppUiHost : AppUiHost {
     override val swipeToPlayNext = AppSettings.swipeToPlayNext
     override val pinnedPlaylists = AppSettings.pinnedPlaylists
     override val librarySort = AppSettings.librarySort
+
+    private val _themeName = MutableStateFlow(AppSettings.accentTheme.value.name)
+    override val currentThemeName: StateFlow<String> = _themeName
+
+    init {
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.Main.immediate) {
+            AppSettings.accentTheme.collect {
+                _themeName.value = it.name
+            }
+        }
+    }
+
+    override fun selectTheme(themeName: String) {
+        val target = AppSettings.accentTheme.value.let {
+            com.music.bitchord.data.settings.AccentTheme.fromName(themeName)
+        }
+        AppSettings.setAccentTheme(target)
+        _themeName.value = target.name
+    }
 
     @Composable
     override fun downloadedIds(): Set<String> {

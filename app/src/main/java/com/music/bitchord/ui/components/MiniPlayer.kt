@@ -54,6 +54,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import com.music.bitchord.data.settings.AccentTheme
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -392,6 +394,14 @@ fun MiniPlayer(
         ),
         label = "miniSheenPhase",
     )
+    val accentTheme by AppSettings.accentTheme.collectAsStateWithLifecycle()
+    val isDoodle = accentTheme == AccentTheme.DOODLE_CAT
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val miniBg = if (isDoodle) (if (isDark) Color(0xFF141416) else Color.White) else Color(0xFF0C0C0E)
+    val miniBorder = if (isDoodle) (if (isDark) Color.White else Color.Black) else Color(0xFFE60012)
+    val playBtnBg = if (isDoodle) (if (isDark) Color.White else Color.Black) else Color(0xFFE60012)
+    val playBtnTint = if (isDoodle) (if (isDark) Color.Black else Color.White) else Color.White
+
     val shape = RoundedCornerShape(percent = 50)
     Box(
         modifier = modifier
@@ -417,8 +427,8 @@ fun MiniPlayer(
                 ambientColor = Color.Black.copy(alpha = 0.30f),
             )
             .clip(shape)
-            .background(Color(0xFF0C0C0E))
-            .border(2.dp, Color(0xFFE60012), shape)
+            .background(miniBg)
+            .border(2.dp, miniBorder, shape)
             .clickable(onClick = onExpand),
     ) {
         Row(
@@ -500,13 +510,13 @@ fun MiniPlayer(
                     )
                 }
             } else {
-                // Persona 5 solid red play/pause button
+                // Play/pause button (Persona 5 crimson red or Doodle Cat black/white)
                 Box(
                     modifier = Modifier
                         .size(GLYPH_SLOT)
                         .clip(CircleShape)
-                        .background(Color(0xFFE60012))
-                        .border(1.5.dp, Color.White, CircleShape)
+                        .background(playBtnBg)
+                        .border(1.5.dp, if (isDoodle) miniBorder else Color.White, CircleShape)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -519,7 +529,7 @@ fun MiniPlayer(
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play),
-                        tint = Color.White,
+                        tint = playBtnTint,
                         modifier = Modifier.size(24.dp),
                     )
                 }

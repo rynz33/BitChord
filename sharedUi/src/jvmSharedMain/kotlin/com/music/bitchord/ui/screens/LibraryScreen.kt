@@ -12,6 +12,9 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.music.bitchord.ui.components.DoodleCatMascot
+import com.music.bitchord.ui.components.DoodleSun
+import com.music.bitchord.ui.components.DoodleCloud
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
@@ -104,130 +107,302 @@ import com.music.bitchord.ui.player.MeshPalette
  */
 @Composable
 private fun PersonaVaultHeader() {
-    Column(modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 6.dp)) {
-        // P5 Top Section Tag
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 6.dp),
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .graphicsLayer { rotationZ = -2f }
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFFE60012))
-                    .border(1.dp, Color.White, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 7.dp, vertical = 2.dp),
-            ) {
-                Text(
-                    text = "04",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                    color = Color.White,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black)
-                    .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 9.dp, vertical = 3.dp),
-            ) {
-                Text(
-                    text = "VAULT // THIEVES DEN",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
-                    color = Color.White,
-                )
-            }
-        }
+    val themeName by AppUi.host.currentThemeName.collectAsStateWithLifecycle()
+    val isDoodle = themeName == "DOODLE_CAT"
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val outlineColor = if (isDark) Color.White else Color.Black
 
-        // P5 Cutout Header: MY VAULT
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(bottom = 8.dp),
-        ) {
-            "MY VAULT".split(" ").forEachIndexed { wordIdx, word ->
-                if (wordIdx > 0) Spacer(Modifier.width(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    word.forEachIndexed { charIdx, char ->
-                        val isRed = (charIdx + wordIdx) % 2 == 1
-                        val tilt = when ((charIdx + wordIdx) % 4) {
-                            0 -> -2f
-                            1 -> 1.5f
-                            2 -> -1f
-                            else -> 2f
+    Column(modifier = Modifier.padding(horizontal = PAGE_GUTTER, vertical = 6.dp)) {
+        if (isDoodle) {
+            // Little Explorers Doodle Cat Library Header (Layer 03 in showcase)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column {
+                    Text(
+                        text = "Layer 03 // About the Project",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (isDark) Color.LightGray else Color.Gray,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "About the Project",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        DoodleSun(Modifier.size(20.dp), color = outlineColor)
+                    }
+                }
+            }
+
+            // Professor Whiskers Mascot Profile Card (Layer 03)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(if (isDark) Color(0xFF1C1C20) else Color(0xFFFBFBFC))
+                    .border(2.dp, outlineColor, RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Professor Whiskers",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                            Text(
+                                text = "Verified Acoustic Composer",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isDark) Color.LightGray else Color.Gray,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Born in a cozy bookshop, Prof. Whiskers blends minimalist upright piano with warm acoustic purr frequencies.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isDark) Color.White else Color.Black)
+                                    .padding(horizontal = 14.dp, vertical = 5.dp),
+                            ) {
+                                Text(
+                                    text = "+ Following",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = if (isDark) Color.Black else Color.White,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        DoodleCatMascot(
+                            modifier = Modifier.size(76.dp),
+                            catColor = outlineColor,
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    // Stats 3-box row (Layer 03)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                                .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("1.4M", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onBackground)
+                                Text("Listeners", style = MaterialTheme.typography.labelSmall, color = if (isDark) Color.LightGray else Color.Gray)
+                            }
                         }
                         Box(
-                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .graphicsLayer { rotationZ = tilt }
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(if (isRed) Color(0xFFE60012) else Color.White)
-                                .border(1.2.dp, Color.Black, RoundedCornerShape(3.dp))
-                                .size(24.dp),
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                                .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = char.toString(),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.sp,
-                                ),
-                                color = if (isRed) Color.White else Color.Black,
-                            )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("42", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onBackground)
+                                Text("Tracks", style = MaterialTheme.typography.labelSmall, color = if (isDark) Color.LightGray else Color.Gray)
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.5.dp, outlineColor, RoundedCornerShape(12.dp))
+                                .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("#1", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black), color = MaterialTheme.colorScheme.onBackground)
+                                Text("Cat Ambient", style = MaterialTheme.typography.labelSmall, color = if (isDark) Color.LightGray else Color.Gray)
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // P5 Confidant Rank Card
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { rotationZ = -0.5f }
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF121216))
-                .border(2.dp, Color(0xFFE60012), RoundedCornerShape(8.dp))
-                .padding(14.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
+            Spacer(Modifier.height(10.dp))
+
+            // Sleep Timer Card (Layer 07 Conclusion)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.5.dp, outlineColor, RoundedCornerShape(16.dp))
+                    .background(if (isDark) Color(0xFF1E1E22) else Color.White)
+                    .padding(12.dp),
             ) {
-                Column {
-                    Text(
-                        text = "CONFIDANT LISTENER RANK",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                        color = Color(0xFFE60012),
-                    )
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = "RANK MAX // PHANTOM VIP",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                        color = Color.White,
-                    )
-                    Text(
-                        text = "3 Liked • 3 Heist Lists",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFD4D4D8),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "🌙 Ambient Sleep Timer",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            text = "Wind Down & Gentle Fade Out (30 Mins Active)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    DoodleCatMascot(
+                        modifier = Modifier.size(42.dp),
+                        sleeping = true,
+                        catColor = outlineColor,
                     )
                 }
+            }
+        } else {
+            // P5 Top Section Tag
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 6.dp),
+            ) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .graphicsLayer { rotationZ = 3f }
-                        .clip(RoundedCornerShape(6.dp))
+                        .graphicsLayer { rotationZ = -2f }
+                        .clip(RoundedCornerShape(4.dp))
                         .background(Color(0xFFE60012))
-                        .border(1.5.dp, Color.White, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                        .border(1.dp, Color.White, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 7.dp, vertical = 2.dp),
                 ) {
                     Text(
-                        text = "99\nMAX",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                        text = "04",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
                         color = Color.White,
                     )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black)
+                        .border(1.dp, Color(0xFFE60012), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 9.dp, vertical = 3.dp),
+                ) {
+                    Text(
+                        text = "VAULT // THIEVES DEN",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        color = Color.White,
+                    )
+                }
+            }
+
+            // P5 Cutout Header: MY VAULT
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(bottom = 8.dp),
+            ) {
+                "MY VAULT".split(" ").forEachIndexed { wordIdx, word ->
+                    if (wordIdx > 0) Spacer(Modifier.width(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        word.forEachIndexed { charIdx, char ->
+                            val isRed = (charIdx + wordIdx) % 2 == 1
+                            val tilt = when ((charIdx + wordIdx) % 4) {
+                                0 -> -2f
+                                1 -> 1.5f
+                                2 -> -1f
+                                else -> 2f
+                            }
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .graphicsLayer { rotationZ = tilt }
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(if (isRed) Color(0xFFE60012) else Color.White)
+                                    .border(1.2.dp, Color.Black, RoundedCornerShape(3.dp))
+                                    .size(24.dp),
+                            ) {
+                                Text(
+                                    text = char.toString(),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 13.sp,
+                                    ),
+                                    color = if (isRed) Color.White else Color.Black,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // P5 Confidant Rank Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { rotationZ = -0.5f }
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF121216))
+                    .border(2.dp, Color(0xFFE60012), RoundedCornerShape(8.dp))
+                    .padding(14.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column {
+                        Text(
+                            text = "CONFIDANT LISTENER RANK",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                            color = Color(0xFFE60012),
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = "RANK MAX // PHANTOM VIP",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                            color = Color.White,
+                        )
+                        Text(
+                            text = "3 Liked • 3 Heist Lists",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFD4D4D8),
+                        )
+                    }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .graphicsLayer { rotationZ = 3f }
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFE60012))
+                            .border(1.5.dp, Color.White, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = "99\nMAX",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                            color = Color.White,
+                        )
+                    }
                 }
             }
         }
