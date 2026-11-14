@@ -5,9 +5,16 @@ import com.music.bitchord.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
@@ -19,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
@@ -39,6 +47,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -368,10 +381,17 @@ fun MiniPlayer(
 ) {
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
-    // percent rather than a dp figure, so the corner stays exactly half the
-    // height if the row's contents ever change it — which is what keeps a pill
-    // a pill instead of a rounded rectangle. Same idiom as [FloatingBottomBar]
-    // directly below it, so the two shapes are the same family.
+    // Dynamic ambient glass sheen phase
+    val infiniteTransition = rememberInfiniteTransition(label = "miniPlayerSheen")
+    val sheenPhase by infiniteTransition.animateFloat(
+        initialValue = -0.3f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 5000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "miniSheenPhase",
+    )
     val shape = RoundedCornerShape(percent = 50)
     Box(
         modifier = modifier
@@ -390,21 +410,64 @@ fun MiniPlayer(
                 locked = controlsLocked,
                 onBlocked = onBlockedControl,
             )
+            .shadow(
+                elevation = 10.dp,
+                shape = shape,
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                ambientColor = Color.Black.copy(alpha = 0.30f),
+            )
             .clip(shape)
             .then(
                 if (reduceDynamicBlur) {
                     Modifier.background(MaterialTheme.colorScheme.surface)
                 } else {
-                    Modifier.optimizedHazeEffect(
-                        state = hazeState,
-                        style = HazeMaterials.thin(MaterialTheme.colorScheme.surface),
-                    )
+                    Modifier
+                        .optimizedHazeEffect(
+                            state = hazeState,
+                            style = HazeMaterials.ultraThin(MaterialTheme.colorScheme.surface),
+                        )
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.14f),
+                                    Color.White.copy(alpha = 0.04f),
+                                ),
+                            ),
+                        )
                 },
             )
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f), shape)
-            // Deliberately silent: the whole bar is the target, so it catches
-            // stray taps meant for the page behind it, and the sheet rising is
-            // its own confirmation. The glyphs on it still buzz.
+            // Subtle translucent white/theme glass border (0.8.dp, 12-18% alpha)
+            .border(
+                width = 0.8.dp,
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.18f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                        Color.White.copy(alpha = 0.12f),
+                    ),
+                ),
+                shape = shape,
+            )
+            // Dynamic ambient glass sheen
+            .drawWithContent {
+                drawContent()
+                val sheenWidth = size.width * 0.32f
+                val startX = sheenPhase * size.width - sheenWidth / 2f
+                drawRoundRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.White.copy(alpha = 0.05f),
+                            Color.White.copy(alpha = 0.14f),
+                            Color.Transparent,
+                        ),
+                        start = Offset(startX, 0f),
+                        end = Offset(startX + sheenWidth, size.height),
+                    ),
+                    size = size,
+                    cornerRadius = CornerRadius(size.height / 2f),
+                )
+            }
             .clickable(onClick = onExpand),
     ) {
         Row(
@@ -428,6 +491,16 @@ fun MiniPlayer(
                     .size(width = artWidth, height = 40.dp)
                     .playerDockArt(dock, ART_CORNER)
                     .clip(RoundedCornerShape(ART_CORNER))
+                    .border(
+                        width = 0.8.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.22f),
+                                Color.White.copy(alpha = 0.10f),
+                            ),
+                        ),
+                        shape = RoundedCornerShape(ART_CORNER),
+                    )
                     .thumbnailBorder(RoundedCornerShape(ART_CORNER))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
@@ -476,15 +549,43 @@ fun MiniPlayer(
                     )
                 }
             } else {
-                IconButton(
-                    onClick = {
-                        haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
-                        onPlayPause()
-                    },
+                // Floating capsule play/pause button with soft depth and glass fill
+                Box(
                     modifier = Modifier
                         .size(GLYPH_SLOT)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = CircleShape,
+                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                            ambientColor = Color.Black.copy(alpha = 0.25f),
+                        )
+                        .clip(CircleShape)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.22f),
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+                                ),
+                            ),
+                        )
+                        .border(
+                            width = 0.8.dp,
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.28f),
+                                    Color.White.copy(alpha = 0.12f),
+                                ),
+                            ),
+                            shape = CircleShape,
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
+                            onPlayPause()
+                        },
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
@@ -495,15 +596,39 @@ fun MiniPlayer(
                 }
             }
             Spacer(Modifier.width(TRANSPORT_GAP))
-            // Faded and inert rather than removed while the host holds the
-            // controls, so the bar keeps its shape — see [controlsLocked].
-            IconButton(
-                onClick = {
-                    haptics.play(Haptic.SkipNext)
-                    onNext()
-                },
-                enabled = !controlsLocked,
-                modifier = Modifier.size(GLYPH_SLOT),
+            // Floating capsule next button with soft depth and glass fill
+            Box(
+                modifier = Modifier
+                    .size(GLYPH_SLOT)
+                    .shadow(
+                        elevation = 2.dp,
+                        shape = CircleShape,
+                        spotColor = Color.White.copy(alpha = 0.12f),
+                        ambientColor = Color.Black.copy(alpha = 0.15f),
+                    )
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.12f),
+                                Color.White.copy(alpha = 0.05f),
+                            ),
+                        ),
+                    )
+                    .border(
+                        width = 0.8.dp,
+                        color = Color.White.copy(alpha = 0.14f),
+                        shape = CircleShape,
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = !controlsLocked,
+                    ) {
+                        haptics.play(Haptic.SkipNext)
+                        onNext()
+                    },
+                contentAlignment = Alignment.Center,
             ) {
                 MiniPlayerNextGlyph(
                     tint = MaterialTheme.colorScheme.onBackground

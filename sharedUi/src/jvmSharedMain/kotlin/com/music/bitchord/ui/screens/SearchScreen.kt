@@ -13,8 +13,10 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import com.music.bitchord.ui.components.PillSegmentedControl
 import com.music.bitchord.ui.components.longPressMenuClickable
@@ -37,18 +39,20 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.NorthWest
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -60,12 +64,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.music.bitchord.data.model.BrowseItem
 import com.music.bitchord.data.model.BrowseType
@@ -82,12 +95,151 @@ import com.music.bitchord.ui.components.MessageState
 import com.music.bitchord.ui.components.PAGE_GUTTER
 import com.music.bitchord.ui.components.RowMoreButton
 import com.music.bitchord.ui.components.ROW_DIVIDER_INSET
-import com.music.bitchord.ui.components.SearchField
 import com.music.bitchord.ui.components.SongRow
 import com.music.bitchord.ui.components.SearchPlayingBars
 import com.music.bitchord.ui.components.thumbnailBorder
 import com.music.bitchord.ui.components.songListSkeleton
 import java.util.Locale
+
+/**
+ * Modern Liquid Glass floating frosted pill search bar with soft glass border,
+ * translucent sheen, luminous magnifier, and subtle elevation depth.
+ */
+@Composable
+fun FloatingFrostedSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    focusRequester: FocusRequester = remember { FocusRequester() },
+    placeholder: String = stringResource(Res.string.search_hint),
+    modifier: Modifier = Modifier,
+) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+
+    val submit = {
+        onSubmit()
+        focusManager.clearFocus()
+    }
+
+    val glassFill = if (isLight) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+    } else {
+        Color(0xFF1E1E22).copy(alpha = 0.70f)
+    }
+
+    val glassBorderBrush = Brush.verticalGradient(
+        if (isLight) listOf(
+            Color.White.copy(alpha = 0.75f),
+            Color.White.copy(alpha = 0.25f),
+        ) else listOf(
+            if (query.isNotBlank()) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.22f),
+            Color.White.copy(alpha = 0.06f),
+        ),
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .shadow(
+                elevation = 5.dp,
+                shape = CircleShape,
+                ambientColor = Color.Black.copy(alpha = 0.20f),
+                spotColor = Color.Black.copy(alpha = 0.30f),
+            )
+            .clip(CircleShape)
+            .background(glassFill)
+            .border(width = 0.8.dp, brush = glassBorderBrush, shape = CircleShape)
+            .drawWithContent {
+                drawContent()
+                // Top ambient specular sheen
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = if (isLight) 0.18f else 0.09f), Color.Transparent),
+                        startY = 0f,
+                        endY = 32f,
+                    ),
+                )
+            }
+            .padding(start = 7.dp, end = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(
+                    if (query.isNotBlank()) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                    else Color.White.copy(alpha = if (isLight) 0.20f else 0.07f),
+                )
+                .border(
+                    width = 0.5.dp,
+                    color = if (query.isNotBlank()) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                    else Color.White.copy(alpha = 0.15f),
+                    shape = CircleShape,
+                )
+                .clickable(enabled = query.isNotBlank(), onClick = submit),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Rounded.Search,
+                contentDescription = stringResource(Res.string.search),
+                tint = if (query.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f)) {
+            if (query.isEmpty()) {
+                Text(
+                    text = placeholder,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onBackground,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { submit() }),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+            )
+        }
+        if (query.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (isLight) 0.20f else 0.08f))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                    .clickable {
+                        onQueryChange("")
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = stringResource(Res.string.clear_search),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun SearchScreen(
@@ -211,12 +363,9 @@ fun SearchScreen(
         // Search field and filter tabs stay fixed at the top, outside the
         // scrolling list, so they're always reachable rather than scrolling
         // away with the results or recent searches beneath them.
-        // The FrostedTopBar is visible on this tab (showing "Search"), so we
-        // clear it fully — status bar inset + bar height + breathing gap — so
-        // the search field sits cleanly below the bar instead of overlapping it.
         Column(modifier = Modifier.padding(top = topPadding)) {
             if (showField) {
-                SearchField(
+                FloatingFrostedSearchBar(
                     query = query,
                     onQueryChange = onQueryChange,
                     onSubmit = onSubmit,
@@ -228,7 +377,7 @@ fun SearchScreen(
                     } else {
                         stringResource(Res.string.search_hint)
                     },
-                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 4.dp),
+                    modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER, bottom = 6.dp),
                 )
             }
             if (sourceSwitcher != null) {
@@ -245,9 +394,6 @@ fun SearchScreen(
             // The filters only mean something once there is a result set to narrow;
             // they stay up for an empty or failed search too, or picking a filter
             // that finds nothing would take away the control needed to leave it.
-            // They are YouTube's categories, so the Library source has none.
-            // The same selector as the sources above it and a folder's tabs, so
-            // the app has one look for "pick one of these".
             if (results != null && !suggesting && !searchingLibrary && !searchingAddons) {
                 PillSegmentedControl(
                     options = SearchFilter.entries.map { it.label },
@@ -283,8 +429,6 @@ fun SearchScreen(
                 suggesting -> {
                     searchSuggestions(
                         suggestions = suggestions,
-                        // Picking one is done typing, so the keyboard comes down
-                        // with it and the results get the whole screen.
                         onClick = { term ->
                             onSuggestionClick(term)
                             focusManager.clearFocus()
@@ -326,7 +470,6 @@ fun SearchScreen(
                             is SearchResult.TopTrack -> row.song
                             is SearchResult.Track -> row.song
                             is SearchResult.Browse -> null
-                            else -> null
                         } }
                     val isCurrentRow = playingRowMatcher(tracks, currentSong)
                     val topResult = results.data.filterIsInstance<SearchResult.TopTrack>().firstOrNull()
@@ -348,17 +491,22 @@ fun SearchScreen(
                     searchSections(results.data, filter).forEach { section ->
                         section.title?.let { title ->
                             item(key = "search-section:$title") {
-                                Text(
-                                    text = title,
+                                Row(
                                     modifier = Modifier.padding(
                                         start = PAGE_GUTTER,
                                         end = PAGE_GUTTER,
-                                        top = 16.dp,
+                                        top = 18.dp,
                                         bottom = 6.dp,
                                     ),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
                             }
                         }
                         itemsIndexed(
@@ -392,9 +540,9 @@ fun SearchScreen(
                             }
                             if (index < section.rows.lastIndex) {
                                 HorizontalDivider(
-                                    modifier = Modifier.padding(start = ROW_DIVIDER_INSET),
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.padding(start = ROW_DIVIDER_INSET, end = PAGE_GUTTER),
+                                    thickness = 0.8.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f),
                                 )
                             }
                         }
@@ -428,8 +576,7 @@ private fun searchSections(rows: List<SearchResult>, filter: SearchFilter): List
 
 /**
  * The Library source's page: the Local Music folder's tracks that match, as
- * plain song rows. An artist or album hit needs no row of its own — every
- * track under that name matches too, so they are already here.
+ * plain song rows.
  */
 private fun LazyListScope.librarySearchResults(
     query: String,
@@ -474,15 +621,11 @@ private fun LazyListScope.librarySearchResults(
                 val blocked = isBlocked(song)
                 SongRow(
                     song = song,
-                    // Dimmed rather than hidden, so the listener can see the
-                    // addon has the song and tap to learn why it won't play.
                     modifier = if (blocked) Modifier.alpha(BLOCKED_ROW_ALPHA) else Modifier,
                     onClick = {
                         if (blocked) {
                             onBlockedSongClick(song)
                         } else {
-                            // The queue skips blocked rows, or playing through
-                            // it would stop at the first one with an error.
                             val playable = tracks.filterNot(isBlocked)
                             onSongClick(playable, playable.indexOfFirst { it === song })
                         }
@@ -496,9 +639,9 @@ private fun LazyListScope.librarySearchResults(
                 )
                 if (index < tracks.lastIndex) {
                     HorizontalDivider(
-                        modifier = Modifier.padding(start = ROW_DIVIDER_INSET),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(start = ROW_DIVIDER_INSET, end = PAGE_GUTTER),
+                        thickness = 0.8.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f),
                     )
                 }
             }
@@ -506,7 +649,7 @@ private fun LazyListScope.librarySearchResults(
     }
 }
 
-/** The All response carries its highest-confidence music hit as a promoted card. */
+/** The All response carries its highest-confidence music hit as an elegant frosted glass card. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TopResultCard(
@@ -516,68 +659,131 @@ private fun TopResultCard(
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val glassFill = if (isLight) Color.White.copy(alpha = 0.55f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    val glassBorder = Brush.verticalGradient(
+        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
+        else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f)),
+    )
+
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(start = PAGE_GUTTER, end = PAGE_GUTTER, top = 18.dp, bottom = 8.dp)
+            .padding(horizontal = PAGE_GUTTER, vertical = 6.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(22.dp),
+                ambientColor = Color.Black.copy(alpha = 0.20f),
+                spotColor = Color.Black.copy(alpha = 0.30f),
+            )
+            .clip(RoundedCornerShape(22.dp))
+            .background(glassFill)
+            .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(22.dp))
+            .drawWithContent {
+                drawContent()
+                // Top ambient specular sheen
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = if (isLight) 0.16f else 0.08f), Color.Transparent),
+                        startY = 0f,
+                        endY = 60f,
+                    ),
+                )
+            }
             .longPressMenuClickable(onClick = onPlay, onLongClick = onLongPress)
-            .contextClick(onLongPress),
+            .contextClick(onLongPress)
+            .padding(16.dp),
     ) {
-        Text(
-            text = "Top result",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = song.thumbnailUrl?.artworkAt(ROW_ART_PX),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.trackArtSize(72.dp, song.isVideo).clip(RoundedCornerShape(10.dp)),
-            )
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = song.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+        Column {
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                    .border(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.32f), CircleShape)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = song.artist,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = "TOP RESULT",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            RowMoreButton(
-                onClick = onLongPress,
-                tint = MaterialTheme.colorScheme.onSurface,
-                iconSize = 24.dp,
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(
-                onClick = onPlay,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-            ) {
-                Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(Res.string.play))
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .trackArtSize(72.dp, song.isVideo)
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(0.6.dp, Color.White.copy(alpha = 0.20f), RoundedCornerShape(14.dp)),
+                ) {
+                    AsyncImage(
+                        model = song.thumbnailUrl?.artworkAt(ROW_ART_PX),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = song.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = song.artist,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                RowMoreButton(
+                    onClick = onLongPress,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    iconSize = 24.dp,
+                )
             }
-            OutlinedButton(
-                onClick = onPlaylist,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-            ) {
-                Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text(stringResource(Res.string.playlist_action))
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onPlay,
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+                ) {
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(Res.string.play), style = MaterialTheme.typography.labelLarge)
+                }
+                OutlinedButton(
+                    onClick = onPlaylist,
+                    shape = CircleShape,
+                    border = BorderStroke(0.8.dp, if (isLight) Color.Black.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.20f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White.copy(alpha = if (isLight) 0.35f else 0.06f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(Res.string.playlist_action), style = MaterialTheme.typography.labelLarge)
+                }
             }
         }
     }
@@ -586,24 +792,13 @@ private fun TopResultCard(
 /**
  * What YouTube would complete the half-typed query to, in place of the results
  * while it is being typed.
- *
- * The first row is the text as typed, put there by the view model rather than
- * taken from YouTube's answer, so running exactly what was asked for is always
- * the nearest row to the keyboard rather than something the thumb has to aim
- * past.
  */
 private fun LazyListScope.searchSuggestions(
     suggestions: List<String>,
     onClick: (String) -> Unit,
     onFill: (String) -> Unit,
 ) {
-    // This is a list-level inset rather than padding hidden inside the first
-    // row. It keeps the gap under the field stable even when that row changes
-    // its text or icon treatment.
     item(key = "suggestions:top-inset") { Spacer(Modifier.height(8.dp)) }
-    // Skip the echo of the typed text (element 0) — it's already visible in
-    // the search field itself — and cap at N so the list stays compact above
-    // the playable-media cards.
     itemsIndexed(suggestions.drop(1).take(3), key = { _, term -> "suggest:$term" }) { _, term ->
         SuggestionRow(
             term = term,
@@ -616,9 +811,7 @@ private fun LazyListScope.searchSuggestions(
 
 /**
  * One typeahead row: tap the text to search it, or the arrow to put it in the
- * field and carry on typing — the pair YouTube, Google and every mobile
- * keyboard's own suggestion strip use, and the reason a longer completion
- * isn't a dead end when it's only nearly right.
+ * field and carry on typing.
  */
 @Composable
 private fun SuggestionRow(
@@ -627,6 +820,8 @@ private fun SuggestionRow(
     onFill: (() -> Unit)?,
     onClick: () -> Unit,
 ) {
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -639,17 +834,22 @@ private fun SuggestionRow(
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            Icons.Rounded.Search,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp),
-        )
-        Spacer(Modifier.width(16.dp))
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.08f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Rounded.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
         Text(
-            // The first row is the deliberate action to search the exact text
-            // in the field, not a server-provided completion. Naming it makes
-            // the otherwise duplicated wording read as intentional.
             text = if (isQueryAction) """${stringResource(Res.string.search)} "$term"""" else term,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
@@ -660,8 +860,10 @@ private fun SuggestionRow(
         if (onFill != null) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(36.dp)
                     .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.08f))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
                     .clickable(onClick = onFill),
                 contentAlignment = Alignment.Center,
             ) {
@@ -669,22 +871,18 @@ private fun SuggestionRow(
                     Icons.Rounded.NorthWest,
                     contentDescription = stringResource(Res.string.recent_search_edit, term),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(16.dp),
                 )
             }
         } else {
-            // Match the arrow button's full touch target, not only its width.
-            // A width-only spacer made the first row shorter than the ones
-            // below, so its vertical rhythm looked visibly uneven.
-            Spacer(Modifier.size(40.dp))
+            Spacer(Modifier.size(36.dp))
         }
     }
 }
 
 /**
- * Hybrid dropdown shown beneath text suggestions while typing: a horizontal
- * divider, then live media rows (cover art + title + subtitle) that play on
- * tap and open the song menu on long-press.
+ * Hybrid dropdown shown beneath text suggestions while typing: a frosted glass
+ * divider, then live media rows that play on tap and open the song menu on long-press.
  */
 private fun LazyListScope.searchTypeaheadDropdown(
     typeaheadResults: List<SearchResult>,
@@ -701,8 +899,8 @@ private fun LazyListScope.searchTypeaheadDropdown(
     item(key = "typeahead:divider") {
         HorizontalDivider(
             modifier = Modifier.padding(start = PAGE_GUTTER, end = PAGE_GUTTER),
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+            thickness = 0.8.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
         )
     }
     items(typeaheadResults, key = { result ->
@@ -738,7 +936,7 @@ private fun LazyListScope.searchTypeaheadDropdown(
 
 /**
  * A single media row inside the typeahead dropdown: 52dp cover art, title,
- * and artist/album subtitle. Tap plays the track; long-press opens the menu.
+ * and artist/album subtitle.
  */
 @Composable
 private fun TypeaheadSongRow(
@@ -796,8 +994,7 @@ private fun TypeaheadSongRow(
 
 /**
  * What was searched for before, shown in place of the results while the field
- * is empty — the same spot Spotify and Apple Music put it, and the reason the
- * blank search page isn't just a sentence any more.
+ * is empty.
  */
 private fun LazyListScope.recentSearches(
     history: List<SearchHistoryEntity>,
@@ -822,21 +1019,35 @@ private fun LazyListScope.recentSearches(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
             )
-            Text(
-                text = stringResource(Res.string.clear),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
+                    .clip(CircleShape)
+                    .background(
+                        if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) Color.White.copy(alpha = 0.65f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    )
+                    .border(
+                        0.8.dp,
+                        Brush.verticalGradient(
+                            if (MaterialTheme.colorScheme.surface.luminance() > 0.5f)
+                                listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.25f))
+                            else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.06f)),
+                        ),
+                        CircleShape,
+                    )
                     .clickable(onClick = onClear)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            )
+                    .padding(horizontal = 14.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(Res.string.clear),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
     items(history, key = { "recent:${it.id}" }) { entity ->
-        // A recent track gets the same menu and swipe as a result row, so it can
-        // be queued without interrupting what's playing. The ids an old build
-        // saved as raw queries ("q:…") have no track behind them.
         val song = entity.toSong()
         RecentSearchEntityRow(
             entity = entity,
@@ -870,18 +1081,36 @@ private fun LazyListScope.recentAddonSearches(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
             )
-            Text(
-                text = stringResource(Res.string.clear),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
+                    .clip(CircleShape)
+                    .background(
+                        if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) Color.White.copy(alpha = 0.65f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    )
+                    .border(
+                        0.8.dp,
+                        Brush.verticalGradient(
+                            if (MaterialTheme.colorScheme.surface.luminance() > 0.5f)
+                                listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.25f))
+                            else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.06f)),
+                        ),
+                        CircleShape,
+                    )
                     .clickable(onClick = onClear)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            )
+                    .padding(horizontal = 14.dp, vertical = 5.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(Res.string.clear),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
     items(history, key = { "addon-recent:$it" }) { term ->
+        val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -889,13 +1118,21 @@ private fun LazyListScope.recentAddonSearches(
                 .padding(start = PAGE_GUTTER, end = 8.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                Icons.Rounded.History,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp),
-            )
-            Spacer(Modifier.width(16.dp))
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.08f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(Modifier.width(14.dp))
             Text(
                 text = term,
                 style = MaterialTheme.typography.titleMedium,
@@ -906,8 +1143,10 @@ private fun LazyListScope.recentAddonSearches(
             )
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.08f))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
                     .clickable { onRemove(term) },
                 contentAlignment = Alignment.Center,
             ) {
@@ -915,7 +1154,7 @@ private fun LazyListScope.recentAddonSearches(
                     Icons.Rounded.Close,
                     contentDescription = stringResource(Res.string.recent_search_remove, term),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
@@ -924,8 +1163,7 @@ private fun LazyListScope.recentAddonSearches(
 
 /**
  * Spotify-style entity row: square thumbnail, bold title, subtitle with type,
- * and a removal button. Tapping navigates to the entity or plays it directly;
- * holding a track opens its menu.
+ * and a frosted removal button.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -938,6 +1176,7 @@ private fun RecentSearchEntityRow(
     onRemove: () -> Unit,
     onSwipeToQueue: (() -> Unit)? = null,
 ) {
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
     SwipeToQueueBox(
         onSwipeToQueue = onSwipeToQueue,
         modifier = Modifier.fillMaxWidth(),
@@ -989,8 +1228,10 @@ private fun RecentSearchEntityRow(
             }
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
+                    .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.08f))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.15f), CircleShape)
                     .clickable(onClick = onRemove),
                 contentAlignment = Alignment.Center,
             ) {
@@ -998,7 +1239,7 @@ private fun RecentSearchEntityRow(
                     Icons.Rounded.Close,
                     contentDescription = stringResource(Res.string.recent_search_remove, entity.title),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }

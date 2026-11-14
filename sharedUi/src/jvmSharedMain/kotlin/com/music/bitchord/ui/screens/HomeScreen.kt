@@ -12,7 +12,10 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
 import com.music.bitchord.ui.components.longPressMenuClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -326,10 +329,29 @@ private fun RecentShelf(
             val columnWidth = trackColumnWidth(maxWidth)
             ShelfRow(
                 contentPadding = PaddingValues(horizontal = PAGE_GUTTER),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 items(shelf.items.chunked(RECENT_TRACKS_PER_COLUMN)) { column ->
-                    Column(Modifier.width(columnWidth)) {
+                    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+                    val colShape = RoundedCornerShape(16.dp)
+                    Column(
+                        Modifier
+                            .width(columnWidth)
+                            .clip(colShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f))
+                            .border(
+                                0.8.dp,
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = if (isDark) 0.22f else 0.32f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                        Color.White.copy(alpha = 0.06f),
+                                    )
+                                ),
+                                colShape,
+                            )
+                            .padding(8.dp)
+                    ) {
                         column.forEach { item ->
                             RecentTrackRow(
                                 item = item,
@@ -353,13 +375,30 @@ private fun RecentSectionHeader(title: String, subtitle: String) {
             .padding(horizontal = PAGE_GUTTER, vertical = 10.dp)
             .fillMaxWidth(),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                            )
+                        )
+                    )
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         if (subtitle.isNotBlank()) {
             Text(
                 text = subtitle,
@@ -367,6 +406,7 @@ private fun RecentSectionHeader(title: String, subtitle: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 11.dp),
             )
         }
     }
@@ -409,12 +449,32 @@ fun CompactTrackRow(
     /** A music video: its thumbnail at 16:9 rather than squared off. */
     isVideo: Boolean = false,
 ) {
+    val rowShape = RoundedCornerShape(10.dp)
+    val rowModifier = if (isCurrent) {
+        Modifier
+            .clip(rowShape)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            .border(
+                0.8.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.35f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
+                        Color.White.copy(alpha = 0.10f),
+                    )
+                ),
+                rowShape,
+            )
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+    } else {
+        Modifier.padding(vertical = 4.dp)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(rowModifier)
             .longPressMenuClickable(onClick = onClick, onLongClick = onLongPress)
-            .contextClick(onLongPress)
-            .padding(vertical = 4.dp),
+            .contextClick(onLongPress),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.trackArtSize(48.dp, isVideo)) {
@@ -424,8 +484,17 @@ fun CompactTrackRow(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(RoundedCornerShape(7.dp))
-                    .thumbnailBorder(RoundedCornerShape(7.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(
+                        0.8.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.28f),
+                                Color.White.copy(alpha = 0.08f),
+                            )
+                        ),
+                        RoundedCornerShape(8.dp),
+                    )
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             )
             if (isCurrent && isPlaying) SearchPlayingBars(Modifier.align(Alignment.Center))
@@ -435,7 +504,7 @@ fun CompactTrackRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -470,39 +539,92 @@ private fun HomeTitle(
 ) {
     val style = MaterialTheme.typography.displayLarge
     val logoHeight = with(LocalDensity.current) { (style.fontSize * 0.78f).toDp() }
-    Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 8.dp)) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+    val headerShape = RoundedCornerShape(20.dp)
+    val headerBorder = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.30f else 0.40f),
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+            Color.White.copy(alpha = if (isDark) 0.08f else 0.14f),
+        )
+    )
+
+    Column(modifier = modifier.padding(horizontal = PAGE_GUTTER, vertical = 6.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.padding(bottom = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(headerShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.28f else 0.38f))
+                .border(0.8.dp, headerBorder, headerShape)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
-            val logoModifier = Modifier
-                .height(logoHeight)
-                .aspectRatio(LOGO_ASPECT)
-            if (festiveLogo) {
-                GoldenLogo(
-                    painter = painterResource(Res.drawable.ic_logo),
-                    modifier = logoModifier,
-                    onClick = onFestiveLogoClick,
-                )
-            } else {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_logo),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = logoModifier,
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                val logoModifier = Modifier
+                    .height(logoHeight)
+                    .aspectRatio(LOGO_ASPECT)
+                if (festiveLogo) {
+                    GoldenLogo(
+                        painter = painterResource(Res.drawable.ic_logo),
+                        modifier = logoModifier,
+                        onClick = onFestiveLogoClick,
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_logo),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = logoModifier,
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Rynz",
+                        style = style,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "Music",
+                        style = style,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Rynz",
-                    style = style,
-                    color = MaterialTheme.colorScheme.primary,
+
+            // Sleek modern glass indicator badge
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .border(
+                        0.8.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.35f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
+                                Color.White.copy(alpha = 0.10f),
+                            )
+                        ),
+                        RoundedCornerShape(percent = 50),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
                 )
                 Text(
-                    text = "Music",
-                    style = style,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    text = "Liquid Glass",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -533,13 +655,30 @@ internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(
-                text = displayTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .width(3.dp)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                )
+                            )
+                        )
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = displayTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             if (displaySubtitle.isNotBlank()) {
                 Text(
                     text = displaySubtitle,
@@ -547,18 +686,35 @@ internal fun SectionHeader(title: String, subtitle: String = "", onShowAll: (() 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 11.dp),
                 )
             }
         }
         if (onShowAll != null) {
-            Text(
-                text = stringResource(Res.string.show_all),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .border(
+                        0.8.dp,
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.35f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                                Color.White.copy(alpha = 0.10f),
+                            )
+                        ),
+                        RoundedCornerShape(percent = 50),
+                    )
                     .clickable(onClick = onShowAll)
-                    .padding(start = 12.dp, top = 4.dp, bottom = 4.dp),
-            )
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.show_all),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }
@@ -798,17 +954,45 @@ fun VideoShelfCard(
     subtitleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     placeholderColor: Color = MaterialTheme.colorScheme.surfaceVariant,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+    val cardShape = RoundedCornerShape(16.dp)
+    val cardBorder = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isCurrent) 0.55f else if (isDark) 0.22f else 0.32f),
+            if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            Color.White.copy(alpha = if (isCurrent) 0.20f else if (isDark) 0.06f else 0.12f),
+        )
+    )
+    val cardBg = if (isCurrent) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f)
+    }
+
     Column(
         modifier = modifier
+            .clip(cardShape)
+            .background(cardBg)
+            .border(0.8.dp, cardBorder, cardShape)
             .longPressMenuClickable(onClick = onClick, onLongClick = onLongPress)
-            .contextClick(onLongPress),
+            .contextClick(onLongPress)
+            .padding(8.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(VIDEO_ASPECT)
                 .clip(RoundedCornerShape(12.dp))
-                .thumbnailBorder(RoundedCornerShape(12.dp))
+                .border(
+                    0.8.dp,
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.25f),
+                            Color.White.copy(alpha = 0.06f),
+                        )
+                    ),
+                    RoundedCornerShape(12.dp),
+                )
                 .background(placeholderColor),
         ) {
             AsyncImage(
@@ -821,11 +1005,11 @@ fun VideoShelfCard(
             )
             if (isCurrent && isPlaying) SearchPlayingBars(Modifier.align(Alignment.Center))
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = item.title,
             style = MaterialTheme.typography.titleMedium,
-            color = titleColor,
+            color = if (isCurrent) MaterialTheme.colorScheme.primary else titleColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -860,14 +1044,38 @@ internal fun NewShelfCard(
     /** A full-colour mark drawn in place of [icon], for a card that stands for a brand. */
     logo: DrawableResource? = null,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+    val cardShape = RoundedCornerShape(16.dp)
+    val cardBorder = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isDark) 0.22f else 0.32f),
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            Color.White.copy(alpha = if (isDark) 0.06f else 0.12f),
+        )
+    )
     Column(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .clip(cardShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f))
+            .border(0.8.dp, cardBorder, cardShape)
+            .clickable(onClick = onClick)
+            .padding(8.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(12.dp))
+                .border(
+                    0.8.dp,
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.25f),
+                            Color.White.copy(alpha = 0.06f),
+                        )
+                    ),
+                    RoundedCornerShape(12.dp),
+                )
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {
@@ -889,7 +1097,7 @@ internal fun NewShelfCard(
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
@@ -919,7 +1127,17 @@ private fun ServiceCard(colors: List<Color>, trackKey: String, icon: ImageVector
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(12.dp)),
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                0.8.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.30f),
+                        Color.White.copy(alpha = 0.08f),
+                    )
+                ),
+                RoundedCornerShape(12.dp),
+            ),
         contentAlignment = Alignment.Center,
     ) {
         MeshGradientBackground(
@@ -949,10 +1167,29 @@ internal fun ShelfCard(
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+    val cardShape = RoundedCornerShape(16.dp)
+    val cardBorder = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (isCurrent) 0.55f else if (isDark) 0.22f else 0.32f),
+            if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            Color.White.copy(alpha = if (isCurrent) 0.20f else if (isDark) 0.06f else 0.12f),
+        )
+    )
+    val cardBg = if (isCurrent) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.25f else 0.35f)
+    }
+
     Column(
         modifier = modifier
+            .clip(cardShape)
+            .background(cardBg)
+            .border(0.8.dp, cardBorder, cardShape)
             .longPressMenuClickable(onClick = onClick, onLongClick = onLongPress)
-            .contextClick(onLongPress),
+            .contextClick(onLongPress)
+            .padding(8.dp),
     ) {
         when (item.browseId) {
             "local:downloads" -> {
@@ -961,7 +1198,17 @@ internal fun ShelfCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(
+                            0.8.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.30f),
+                                    Color.White.copy(alpha = 0.08f),
+                                )
+                            ),
+                            RoundedCornerShape(12.dp),
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     MeshGradientBackground(
@@ -1004,7 +1251,16 @@ internal fun ShelfCard(
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(12.dp))
-                        .thumbnailBorder(RoundedCornerShape(12.dp))
+                        .border(
+                            0.8.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.25f),
+                                    Color.White.copy(alpha = 0.06f),
+                                )
+                            ),
+                            RoundedCornerShape(12.dp),
+                        )
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     AsyncImage(
@@ -1017,7 +1273,7 @@ internal fun ShelfCard(
                 }
             }
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -1034,7 +1290,7 @@ internal fun ShelfCard(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),

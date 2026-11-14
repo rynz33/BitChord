@@ -16,6 +16,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -45,8 +46,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -131,10 +134,29 @@ fun GlassNavBar(
     // order, which is where the shape wants it anyway.
     val standaloneIndex = tabs.lastIndex
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+
+    // Directional glass specular highlight border for tabs, standalone Search, and accessory
+    val glassBorderBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = if (isDark) 0.35f else 0.45f),
+            selectedColor.copy(alpha = 0.28f),
+            Color.White.copy(alpha = if (isDark) 0.12f else 0.20f),
+        ),
+    )
+
     // A factory, not a value — see the note in FloatingTabBar's header. Each of
     // the three surfaces gets its own glass modifier and so its own shape cache.
     // The theme's own glass tint, as the liquid top bar has it — no white wash.
-    val glassSurface: @Composable () -> Modifier = { Modifier.liquidGlass(shape = pillShape) }
+    val glassSurface: @Composable () -> Modifier = {
+        Modifier
+            .liquidGlass(shape = pillShape)
+            .border(
+                width = 0.8.dp,
+                brush = glassBorderBrush,
+                shape = pillShape,
+            )
+    }
 
     FloatingTabBar(
         selectedTabKey = selectedIndex,
@@ -190,7 +212,7 @@ fun GlassNavBar(
         colors = FloatingTabBarDefaults.colors(
             backgroundColor = Color.Transparent,
             accessoryBackgroundColor = Color.Transparent,
-            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.26f),
         ),
         // Flat, because the glass is not. Every surface here already draws its
         // own [Shadow.Default] as part of the backdrop pass, and the library's
@@ -398,6 +420,16 @@ private fun GlassNowPlaying(
                     // the player flies to: only one is composed at rest.
                     .playerDockArt(dock, ACCESSORY_ART_CORNER)
                     .clip(RoundedCornerShape(ACCESSORY_ART_CORNER))
+                    .border(
+                        width = 0.8.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.32f),
+                                Color.White.copy(alpha = 0.10f),
+                            )
+                        ),
+                        shape = RoundedCornerShape(ACCESSORY_ART_CORNER),
+                    )
                     .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 AsyncImage(
@@ -445,12 +477,38 @@ private fun GlassNowPlaying(
                     )
                 }
             } else {
-                IconButton(
-                    onClick = {
-                        haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
-                        onPlayPause()
-                    },
-                    modifier = Modifier.size(glyphSlot),
+                val playBtnShape = RoundedCornerShape(percent = 50)
+                Box(
+                    modifier = Modifier
+                        .size(glyphSlot)
+                        .clip(playBtnShape)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.14f),
+                                    Color.White.copy(alpha = 0.05f),
+                                )
+                            )
+                        )
+                        .border(
+                            0.8.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.32f),
+                                    Color.White.copy(alpha = 0.10f),
+                                )
+                            ),
+                            playBtnShape,
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
+                                onPlayPause()
+                            },
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
@@ -465,14 +523,40 @@ private fun GlassNowPlaying(
             // survive that, not a second transport button.
             if (!isInline) {
                 // Glyph centres 44dp apart, as Apple's are.
-                Spacer(Modifier.width(4.dp))
-                IconButton(
-                    onClick = {
-                        haptics.play(Haptic.SkipNext)
-                        onNext()
-                    },
-                    enabled = !controlsLocked,
-                    modifier = Modifier.size(glyphSlot),
+                Spacer(Modifier.width(6.dp))
+                val skipBtnShape = RoundedCornerShape(percent = 50)
+                Box(
+                    modifier = Modifier
+                        .size(glyphSlot)
+                        .clip(skipBtnShape)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.White.copy(alpha = 0.02f),
+                                )
+                            )
+                        )
+                        .border(
+                            0.8.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.22f),
+                                    Color.White.copy(alpha = 0.06f),
+                                )
+                            ),
+                            skipBtnShape,
+                        )
+                        .clickable(
+                            enabled = !controlsLocked,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                haptics.play(Haptic.SkipNext)
+                                onNext()
+                            },
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
                     MiniPlayerNextGlyph(
                         tint = contentColor.copy(alpha = if (controlsLocked) 0.3f else 1f),

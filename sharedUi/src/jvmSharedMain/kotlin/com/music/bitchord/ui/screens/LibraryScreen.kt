@@ -5,19 +5,26 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,6 +37,11 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Cached
+import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,17 +50,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.music.bitchord.data.YtMusicRepository
+import com.music.bitchord.data.model.CARD_ART_PX
 import com.music.bitchord.data.model.HomeShelf
 import com.music.bitchord.data.model.LibraryPage
 import com.music.bitchord.data.model.ShelfItem
 import com.music.bitchord.data.model.UiState
+import com.music.bitchord.data.model.artworkAt
 import com.music.bitchord.data.settings.LibrarySort
 import com.music.bitchord.ui.AppUi
 import com.music.bitchord.ui.icons.BitChordIcons
@@ -57,8 +76,13 @@ import com.music.bitchord.ui.components.MessageState
 import com.music.bitchord.ui.components.PAGE_GUTTER
 import com.music.bitchord.ui.components.PullToRefresh
 import com.music.bitchord.ui.components.SHELF_CARD_WIDTH
+import com.music.bitchord.ui.components.SearchPlayingBars
+import com.music.bitchord.ui.components.contextClick
 import com.music.bitchord.ui.components.libraryGrid
 import com.music.bitchord.ui.components.librarySkeleton
+import com.music.bitchord.ui.components.longPressMenuClickable
+import com.music.bitchord.ui.player.MeshGradientBackground
+import com.music.bitchord.ui.player.MeshPalette
 
 /**
  * The signed-in library: the saved collections, as shelves of cards.
@@ -234,68 +258,532 @@ fun LibraryScreen(
 data class LibraryLink(val item: ShelfItem, val icon: ImageVector, val logo: DrawableResource? = null)
 
 /**
- * The folders as a plain list — icon, name, chevron, hairlines between — the
- * way a music app's library has always opened, rather than as cards that all
- * look alike because none of them has artwork.
+ * The folders styled as an elegant frosted card list — each row with a luminous
+ * icon container, clean typography, frosted chevron pill, and soft glass dividers
+ * inside a floating liquid glass container.
  */
 @Composable
 private fun LibraryLinkList(links: List<LibraryLink>, onClick: (ShelfItem) -> Unit) {
-    Column(Modifier.padding(top = 4.dp, bottom = 22.dp)) {
-        links.forEachIndexed { index, link ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 54.dp)
-                    .clickable { onClick(link.item) }
-                    .padding(horizontal = PAGE_GUTTER),
-            ) {
-                if (link.logo != null) {
-                    // A mark, not a glyph: white on dark, black on light, with
-                    // its cut-outs left clear.
-                    Icon(
-                        painter = painterResource(link.logo),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(LINK_ICON_SIZE),
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val glassCardFill = if (isLight) Color.White.copy(alpha = 0.55f) else Color(0xFF1E1E22).copy(alpha = 0.48f)
+    val glassBorder = Brush.verticalGradient(
+        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
+        else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.05f)),
+    )
+    val dividerColor = if (isLight) Color.Black.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.08f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PAGE_GUTTER, vertical = 6.dp)
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = Color.Black.copy(alpha = 0.15f),
+                spotColor = Color.Black.copy(alpha = 0.25f),
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .background(glassCardFill)
+            .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(20.dp))
+            .drawWithContent {
+                drawContent()
+                // Top ambient specular sheen
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = if (isLight) 0.15f else 0.08f), Color.Transparent),
+                        startY = 0f,
+                        endY = 40f,
+                    ),
+                )
+            },
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            links.forEachIndexed { index, link ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 56.dp)
+                        .clickable { onClick(link.item) }
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (link.logo != null) Color.White.copy(alpha = if (isLight) 0.18f else 0.10f)
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                            )
+                            .border(
+                                width = 0.5.dp,
+                                color = if (link.logo != null) Color.White.copy(alpha = 0.22f)
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.30f),
+                                shape = RoundedCornerShape(10.dp),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (link.logo != null) {
+                            Icon(
+                                painter = painterResource(link.logo),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        } else {
+                            Icon(
+                                imageVector = link.icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        text = link.item.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
-                } else {
-                    Icon(
-                        imageVector = link.icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(LINK_ICON_SIZE),
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = if (isLight) 0.18f else 0.06f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = BitChordIcons.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+                if (index < links.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 68.dp, end = 16.dp),
+                        thickness = 0.8.dp,
+                        color = dividerColor,
                     )
                 }
-                Spacer(Modifier.width(LINK_ICON_GAP))
+            }
+        }
+    }
+}
+
+/**
+ * Section header styled with modern typography and a floating frosted pill button
+ * for "Show all".
+ */
+@Composable
+private fun LibrarySectionHeader(
+    title: String,
+    subtitle: String = "",
+    onShowAll: (() -> Unit)? = null,
+) {
+    val displayTitle = localizeShelfTitle(title)
+    val displaySubtitle = localizeShelfSubtitle(subtitle)
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+
+    Row(
+        modifier = Modifier
+            .padding(horizontal = PAGE_GUTTER, vertical = 8.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = displayTitle,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (displaySubtitle.isNotBlank()) {
                 Text(
-                    text = link.item.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    text = displaySubtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
                 )
+            }
+        }
+        if (onShowAll != null) {
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(
+                        if (isLight) Color.White.copy(alpha = 0.65f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    )
+                    .border(
+                        width = 0.8.dp,
+                        brush = Brush.verticalGradient(
+                            if (isLight) listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.3f))
+                            else listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.06f)),
+                        ),
+                        shape = CircleShape,
+                    )
+                    .clickable(onClick = onShowAll)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(Res.string.show_all),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(4.dp))
                 Icon(
                     imageVector = BitChordIcons.ChevronRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f),
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            if (index < links.lastIndex) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(start = PAGE_GUTTER + LINK_ICON_SIZE + LINK_ICON_GAP),
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outline,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp),
                 )
             }
         }
     }
 }
 
-private val LINK_ICON_SIZE = 24.dp
-private val LINK_ICON_GAP = 16.dp
+/**
+ * Modern Liquid Glass card for creating a new playlist or importing Spotify playlists,
+ * featuring translucent frosted background, specular sheen, and glowing circular icon badge.
+ */
+@Composable
+internal fun LibraryNewShelfCard(
+    icon: ImageVector,
+    label: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier.width(SHELF_CARD_WIDTH),
+    logo: DrawableResource? = null,
+) {
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val glassCardFill = if (isLight) Color.White.copy(alpha = 0.48f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
+    val glassBorder = Brush.verticalGradient(
+        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
+        else listOf(Color.White.copy(alpha = 0.24f), Color.White.copy(alpha = 0.06f)),
+    )
+
+    Column(
+        modifier = modifier.clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .shadow(
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    ambientColor = Color.Black.copy(alpha = 0.15f),
+                    spotColor = Color.Black.copy(alpha = 0.25f),
+                )
+                .clip(RoundedCornerShape(16.dp))
+                .background(glassCardFill)
+                .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(16.dp))
+                .drawWithContent {
+                    drawContent()
+                    // Ambient specular glass sheen
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isLight) 0.18f else 0.10f),
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.03f),
+                            ),
+                        ),
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (logo != null) Color.White.copy(alpha = if (isLight) 0.16f else 0.10f)
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                    )
+                    .border(
+                        width = 0.8.dp,
+                        color = if (logo != null) Color.White.copy(alpha = 0.24f)
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (logo != null) {
+                    Icon(
+                        painter = painterResource(logo),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(30.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun LibraryServiceCard(colors: List<Color>, trackKey: String, icon: ImageVector) {
+    val palette = remember { MeshPalette(colors) }
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val glassBorder = Brush.verticalGradient(
+        if (isLight) listOf(Color.White.copy(alpha = 0.70f), Color.White.copy(alpha = 0.25f))
+        else listOf(Color.White.copy(alpha = 0.24f), Color.White.copy(alpha = 0.06f)),
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .shadow(
+                elevation = 3.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = Color.Black.copy(alpha = 0.20f),
+                spotColor = Color.Black.copy(alpha = 0.30f),
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(16.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        MeshGradientBackground(
+            palette = palette,
+            trackKey = trackKey,
+            continuous = true,
+            blurRadius = 24.dp,
+        )
+        // Soft glass sheen overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.14f), Color.Transparent),
+                    ),
+                ),
+        )
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.35f))
+                .border(0.8.dp, Color.White.copy(alpha = 0.25f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Modern Liquid Glass shelf card for Library: sleek rounded corners (16.dp),
+ * soft translucent border, subtle specular depth, and floating frosted badge for pinned items.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+internal fun LibraryShelfCard(
+    item: ShelfItem,
+    onClick: () -> Unit,
+    onLongPress: (() -> Unit)? = null,
+    modifier: Modifier = Modifier.width(SHELF_CARD_WIDTH),
+    isPinned: Boolean = false,
+    isCurrent: Boolean = false,
+    isPlaying: Boolean = false,
+) {
+    val isLight = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    val glassBorder = Brush.verticalGradient(
+        if (isLight) listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.20f))
+        else listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f)),
+    )
+
+    Column(
+        modifier = modifier
+            .longPressMenuClickable(onClick = onClick, onLongClick = onLongPress)
+            .contextClick(onLongPress),
+    ) {
+        when (item.browseId) {
+            "local:downloads" -> {
+                val palette = remember { MeshPalette(listOf(Color(0xFF1E3C72), Color(0xFF2A5298))) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .shadow(
+                            elevation = 3.dp,
+                            shape = RoundedCornerShape(16.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.20f),
+                            spotColor = Color.Black.copy(alpha = 0.30f),
+                        )
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    MeshGradientBackground(
+                        palette = palette,
+                        trackKey = "local:downloads",
+                        continuous = true,
+                        blurRadius = 24.dp,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.White.copy(alpha = 0.14f), Color.Transparent),
+                                ),
+                            ),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.35f))
+                            .border(0.8.dp, Color.White.copy(alpha = 0.25f), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = BitChordIcons.Download,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
+            "local:all" -> LibraryServiceCard(
+                colors = listOf(Color(0xFF134E5E), Color(0xFF71B280)),
+                trackKey = "local:all",
+                icon = Icons.Rounded.LibraryMusic,
+            )
+            "local:cache" -> LibraryServiceCard(
+                colors = listOf(Color(0xFF42275A), Color(0xFF734B6D)),
+                trackKey = "local:cache",
+                icon = Icons.Rounded.Cached,
+            )
+            "local:webdav" -> LibraryServiceCard(
+                colors = listOf(Color(0xFF3A1C71), Color(0xFFD76D77)),
+                trackKey = "local:webdav",
+                icon = Icons.Rounded.Folder,
+            )
+            "local:smb" -> LibraryServiceCard(
+                colors = listOf(Color(0xFF0F2027), Color(0xFF2C5364)),
+                trackKey = "local:smb",
+                icon = Icons.Rounded.Storage,
+            )
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .shadow(
+                            elevation = 3.dp,
+                            shape = RoundedCornerShape(16.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.20f),
+                            spotColor = Color.Black.copy(alpha = 0.30f),
+                        )
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(width = 0.8.dp, brush = glassBorder, shape = RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    AsyncImage(
+                        model = item.thumbnailUrl.artworkAt(CARD_ART_PX),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Ambient specular glass sheen
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.White.copy(alpha = 0.12f), Color.Transparent),
+                                    startY = 0f,
+                                    endY = 70f,
+                                ),
+                            ),
+                    )
+                    if (isPinned) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .border(0.8.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                                .padding(5.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = BitChordIcons.Pin,
+                                contentDescription = stringResource(Res.string.pinned),
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp),
+                            )
+                        }
+                    }
+                    if (isCurrent && isPlaying) SearchPlayingBars(Modifier.align(Alignment.Center))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+        val displaySubtitle = localizeCardSubtitle(item.subtitle)
+        Text(
+            text = displaySubtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
 
 /**
  * The one shelf on this page that can be written to: it leads with the tile
@@ -320,14 +808,14 @@ private fun PlaylistShelf(
         pinnedPlaylists = pinnedPlaylists,
         leadingCard = {
             Row(horizontalArrangement = Arrangement.spacedBy(LIBRARY_GRID_SPACING)) {
-                NewShelfCard(
+                LibraryNewShelfCard(
                     icon = BitChordIcons.Plus,
                     label = stringResource(Res.string.new_playlist),
                     subtitle = stringResource(Res.string.saved_to_youtube_music),
                     onClick = onNewPlaylist,
                 )
                 if (onImportSpotifyPlaylist != null) {
-                    NewShelfCard(
+                    LibraryNewShelfCard(
                         icon = BitChordIcons.Download,
                         label = stringResource(Res.string.import_spotify),
                         subtitle = stringResource(Res.string.import_spotify_subtitle),
@@ -365,7 +853,7 @@ internal fun LibraryGridShelf(
     val leadingCount = if (leadingCard != null) 1 else 0
     val visibleItems = shelf.items.take((LIBRARY_ROW_MAX_ITEMS - leadingCount).coerceAtLeast(0))
     Column(Modifier.padding(bottom = 26.dp)) {
-        SectionHeader(
+        LibrarySectionHeader(
             title = shelf.title,
             subtitle = shelf.subtitle,
             onShowAll = onShowAll.takeIf { shelf.items.size + leadingCount > LIBRARY_ROW_MAX_ITEMS },
@@ -376,7 +864,7 @@ internal fun LibraryGridShelf(
         ) {
             leadingCard?.let { card -> item(key = "leading") { card() } }
             items(visibleItems) { item ->
-                ShelfCard(
+                LibraryShelfCard(
                     item = item,
                     onClick = { onItemClick(item) },
                     onLongPress = { onItemLongPress(item) },
@@ -423,7 +911,7 @@ fun LibraryGridPage(
         ) {
             if (onNewPlaylist != null) {
                 item(key = "leading") {
-                    NewShelfCard(
+                    LibraryNewShelfCard(
                         icon = BitChordIcons.Plus,
                         label = stringResource(Res.string.new_playlist),
                         subtitle = stringResource(Res.string.saved_to_youtube_music),
@@ -433,7 +921,7 @@ fun LibraryGridPage(
                 }
             }
             items(sortedShelf.items, key = { it.browseId ?: it.title }) { item ->
-                ShelfCard(
+                LibraryShelfCard(
                     item = item,
                     onClick = { onItemClick(item) },
                     onLongPress = { onItemLongPress(item) },

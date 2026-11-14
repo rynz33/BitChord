@@ -36,10 +36,12 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.unit.Dp
@@ -108,6 +110,24 @@ fun ThinSlider(
             stiffness = Spring.StiffnessMediumLow,
         ),
         label = "sliderHeight",
+    )
+    val playheadExpansion by animateFloatAsState(
+        targetValue = if (dragging) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "playheadExpansion",
+    )
+    val ambientSheen = rememberInfiniteTransition(label = "sliderAmbientSheen")
+    val sheenPhase by ambientSheen.animateFloat(
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "sliderSheenPhase",
     )
     // The sheen gets a minimum beat even when the switch resolves instantly —
     // a cached offset can land in a few hundred milliseconds — so its entry,
@@ -187,16 +207,58 @@ fun ThinSlider(
                 .height(height),
         ) {
             val radius = CornerRadius(size.height / 2f)
-            drawRoundRect(color = inactiveColor, cornerRadius = radius)
+
+            // Frosted glass track surface with subtle translucent fill and depth
+            drawRoundRect(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.16f),
+                        Color.White.copy(alpha = 0.08f),
+                    ),
+                ),
+                cornerRadius = radius,
+            )
+            // Top specular glass highlight
+            drawRoundRect(
+                brush = Brush.verticalGradient(
+                    0f to Color.White.copy(alpha = 0.18f),
+                    0.5f to Color.Transparent,
+                ),
+                cornerRadius = radius,
+            )
+            // Subtle translucent white/theme glass border (0.8.dp, 12-18% alpha)
+            drawRoundRect(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.18f),
+                        Color.White.copy(alpha = 0.12f),
+                    ),
+                ),
+                cornerRadius = radius,
+                style = Stroke(width = 0.8.dp.toPx()),
+            )
+
+            // Dynamic ambient glass sheen along the track
+            val sheenBand = size.width * 0.28f
+            val sheenStartX = sheenPhase * size.width
+            drawRoundRect(
+                brush = Brush.horizontalGradient(
+                    colorStops = arrayOf(
+                        0f to Color.Transparent,
+                        0.5f to Color.White.copy(alpha = 0.12f),
+                        1f to Color.Transparent,
+                    ),
+                    startX = sheenStartX,
+                    endX = sheenStartX + sheenBand,
+                ),
+                size = size,
+                cornerRadius = radius,
+            )
+
             // Between the two track colours, and drawn *under* the played fill:
             // once the playhead reaches the window the transition is no longer
             // upcoming, and the ordinary progress colour taking it over is what
             // says so.
-            //
-            // Feathered at both ends rather than drawn as a capsule of its own:
-            // a blend has no hard edge in time, so the marker shouldn't either.
-            // It is painted across the bar's own capsule, so its ends dissolve
-            // into the track instead of sitting on it as a second pill.
             shownWindow?.takeIf { windowAlpha > 0f }?.let { window ->
                 val from = size.width * window.start.coerceIn(0f, 1f)
                 val to = size.width * window.endInclusive.coerceIn(0f, 1f)
@@ -207,9 +269,6 @@ fun ThinSlider(
                         .coerceAtMost(span / 2f)
                     val f = feather / span
                     val full = markerColor.alpha * windowAlpha
-                    // Smoothstep down each feather: no slope break where the
-                    // ramp meets the flat middle, so there is no line for the
-                    // eye to catch at either end.
                     val ramp = (0..WINDOW_FEATHER_STEPS).map { step ->
                         val t = step / WINDOW_FEATHER_STEPS.toFloat()
                         t to markerColor.copy(alpha = full * t * t * (3f - 2f * t))
@@ -234,22 +293,93 @@ fun ThinSlider(
             val cover = if (dragging) 0f else mixPulse?.cover ?: 0f
             val base = value.coerceIn(0f, 1f)
             val fraction = base + (1f - base) * cover
-            // Scaled by [fillFactor]: retracted to nothing while the sheen
-            // runs (two white signals on one bar would read as progress
-            // fighting the wait) and slid back in when the switch lands. The
-            // capsule's minimum width rides the same factor, so the nub at
-            // zero progress retires with the fill instead of sitting as a
-            // dot under the sheen.
             val filled = size.width * fraction * fillFactor
             if (filled > 0f) {
                 val alpha = if (dragging) activeColor.alpha else mixPulse?.alpha(activeColor.alpha) ?: activeColor.alpha
+                val fillWidth = filled.coerceAtLeast(size.height * fillFactor).coerceAtMost(size.width)
+
+                // Luminous glass progress fill
                 drawRoundRect(
-                    color = activeColor.copy(alpha = alpha),
-                    size = Size(
-                        filled.coerceAtLeast(size.height * fillFactor).coerceAtMost(size.width),
-                        size.height,
+                    brush = Brush.horizontalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.85f * alpha),
+                            activeColor.copy(alpha = alpha),
+                        ),
+                        startX = 0f,
+                        endX = fillWidth,
                     ),
+                    size = Size(fillWidth, size.height),
                     cornerRadius = radius,
+                )
+                // Top inner glass reflection across progress fill
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.32f * alpha),
+                        0.5f to Color.Transparent,
+                    ),
+                    size = Size(fillWidth, size.height),
+                    cornerRadius = radius,
+                )
+            }
+
+            // Sleek modern scrubber with luminous glass playhead
+            if (fillFactor > 0f && fraction > 0f) {
+                val playheadX = (size.width * fraction * fillFactor).coerceIn(size.height / 2f, size.width - size.height / 2f)
+                val centerY = size.height / 2f
+                val baseHeadRadius = size.height / 2f
+                val playheadRadius = baseHeadRadius + 0.8.dp.toPx() + 3.2.dp.toPx() * playheadExpansion
+                val haloRadius = playheadRadius + 5.dp.toPx() + 6.dp.toPx() * playheadExpansion
+
+                // 1. Luminous outer halo glow
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.36f * (0.65f + 0.35f * playheadExpansion)),
+                            Color.White.copy(alpha = 0.10f * (0.65f + 0.35f * playheadExpansion)),
+                            Color.Transparent,
+                        ),
+                        center = Offset(playheadX, centerY),
+                        radius = haloRadius,
+                    ),
+                    radius = haloRadius,
+                    center = Offset(playheadX, centerY),
+                )
+
+                // 2. Translucent glass playhead body with soft depth
+                drawCircle(
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White,
+                            Color.White.copy(alpha = 0.88f),
+                        ),
+                        startY = centerY - playheadRadius,
+                        endY = centerY + playheadRadius,
+                    ),
+                    radius = playheadRadius,
+                    center = Offset(playheadX, centerY),
+                )
+
+                // 3. Crisp translucent glass rim border (0.8.dp, 16-45% alpha)
+                drawCircle(
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.45f),
+                            Color.White.copy(alpha = 0.18f),
+                        ),
+                        startY = centerY - playheadRadius,
+                        endY = centerY + playheadRadius,
+                    ),
+                    radius = playheadRadius,
+                    center = Offset(playheadX, centerY),
+                    style = Stroke(width = 0.8.dp.toPx()),
+                )
+
+                // 4. Specular liquid glass reflection core
+                val coreRadius = playheadRadius * 0.36f
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.95f),
+                    radius = coreRadius,
+                    center = Offset(playheadX, centerY - playheadRadius * 0.2f),
                 )
             }
         }
@@ -471,21 +601,36 @@ private fun MixSheen(height: Dp, color: Color) {
     ) {
         val band = size.width * SHEEN_BAND_FRACTION
         val x = phase * size.width
+        val radius = CornerRadius(size.height / 2f)
         drawRoundRect(
             brush = Brush.horizontalGradient(
                 colorStops = arrayOf(
                     0f to Color.Transparent,
+                    0.25f to color.copy(alpha = 0.6f),
                     0.5f to color,
+                    0.75f to color.copy(alpha = 0.6f),
                     1f to Color.Transparent,
                 ),
                 startX = x,
                 endX = x + band,
             ),
             size = Size(size.width, size.height),
-            // The band is clipped to the same capsule the track is drawn
-            // with: a plain rect bared square corners wherever the sweep
-            // crossed the rounded ends.
-            cornerRadius = CornerRadius(size.height / 2f),
+            cornerRadius = radius,
+        )
+        // Subtle ambient glass border sheen
+        drawRoundRect(
+            brush = Brush.horizontalGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
+                    0.5f to Color.White.copy(alpha = 0.25f),
+                    1f to Color.Transparent,
+                ),
+                startX = x,
+                endX = x + band,
+            ),
+            size = Size(size.width, size.height),
+            cornerRadius = radius,
+            style = Stroke(width = 0.8.dp.toPx()),
         )
     }
 }

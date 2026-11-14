@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -41,8 +42,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -246,6 +249,33 @@ fun FloatingBottomBar(
         lastHapticTab = selectedIndex
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() <= 0.5f
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    // Liquid glass specular border catching directional light on top
+    val glassBorderBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = if (isDark) 0.35f else 0.45f),
+            primaryColor.copy(alpha = 0.28f),
+            Color.White.copy(alpha = if (isDark) 0.10f else 0.18f),
+        ),
+    )
+
+    // Subtle luminous glass indicator styling
+    val indicatorFill = Brush.verticalGradient(
+        colors = listOf(
+            primaryColor.copy(alpha = if (isDark) 0.28f else 0.22f),
+            primaryColor.copy(alpha = if (isDark) 0.14f else 0.10f),
+        ),
+    )
+    val indicatorBorder = Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = if (isDark) 0.55f else 0.65f),
+            primaryColor.copy(alpha = 0.50f),
+            Color.White.copy(alpha = if (isDark) 0.18f else 0.25f),
+        ),
+    )
+
     Box(
         modifier = modifier
             .windowInsetsPadding(floatingBarInsets)
@@ -259,13 +289,24 @@ fun FloatingBottomBar(
                 } else if (useGlass) {
                     Modifier.liquidGlass(shape = pillShape)
                 } else {
-                    Modifier.optimizedHazeEffect(
-                        state = hazeState,
-                        style = HazeMaterials.regular(container),
-                    )
+                    Modifier
+                        .optimizedHazeEffect(
+                            state = hazeState,
+                            style = HazeMaterials.regular(container),
+                        )
+                        .background(container.copy(alpha = 0.70f))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = if (isDark) 0.08f else 0.15f),
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = if (isDark) 0.02f else 0.05f),
+                                )
+                            )
+                        )
                 },
             )
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), pillShape)
+            .border(0.8.dp, glassBorderBrush, pillShape)
             .padding(horizontal = PILL_INSET, vertical = PILL_INSET),
     ) {
         if (tabWidthPx > 0f) {
@@ -284,9 +325,40 @@ fun FloatingBottomBar(
                         scaleY = 1f - lag * STRETCH * SQUASH
                     }
                     .clip(pillShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
-                    .border(0.8.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), pillShape),
-            )
+                    .background(indicatorFill)
+                    .border(0.8.dp, indicatorBorder, pillShape),
+            ) {
+                // Specular top highlight curve for liquid glass curvature
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.65f)
+                        .height(1.5.dp)
+                        .align(Alignment.TopCenter)
+                        .clip(pillShape)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.55f),
+                                    Color.Transparent,
+                                )
+                            )
+                        )
+                )
+                // Subtle luminous radial core glow
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    primaryColor.copy(alpha = 0.18f),
+                                    Color.Transparent,
+                                )
+                            )
+                        )
+                )
+            }
         }
 
         Row(

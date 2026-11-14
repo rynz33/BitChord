@@ -19,19 +19,24 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -39,11 +44,13 @@ import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.alpha
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -68,6 +75,7 @@ import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -95,6 +103,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.stringArrayResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -104,6 +113,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -179,6 +189,7 @@ import com.music.bitchord.ui.components.optimizedHazeEffect
 import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -740,6 +751,246 @@ private fun SlidingPlayerDeck(
                 },
         ) {
             content()
+        }
+    }
+}
+
+/**
+ * Floating capsule transport buttons with soft depth, liquid glass fill, and luminous glow.
+ */
+@Composable
+private fun FloatingCapsuleTransportRow(
+    isPlaying: Boolean,
+    isLoading: Boolean,
+    previousEnabled: Boolean,
+    nextEnabled: Boolean,
+    onPrevious: () -> Unit,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    compact: Boolean = false,
+) {
+    val haptics = rememberHaptics()
+    val playTouchSize = if (compact) 76.dp else 92.dp
+    val playPillSize = if (compact) 60.dp else 76.dp
+    val playGlyphSize = if (compact) 32.dp else 42.dp
+    val skipTouchSize = 54.dp
+    val skipPillSize = if (compact) 44.dp else 52.dp
+    val skipGlyphSize = if (compact) 26.dp else 32.dp
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val prevAlpha by animateFloatAsState(
+            targetValue = if (previousEnabled) 1f else 0.3f,
+            label = "floatingPrevAlpha",
+        )
+        // Previous floating glass capsule button
+        Box(
+            modifier = Modifier
+                .size(skipTouchSize),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(skipPillSize)
+                    .shadow(
+                        elevation = 5.dp,
+                        shape = CircleShape,
+                        spotColor = Color.White.copy(alpha = 0.14f * prevAlpha),
+                        ambientColor = Color.Black.copy(alpha = 0.25f),
+                    )
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.16f * prevAlpha),
+                                Color.White.copy(alpha = 0.05f * prevAlpha),
+                            ),
+                        ),
+                    )
+                    .border(
+                        width = 0.8.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.20f * prevAlpha),
+                                Color.White.copy(alpha = 0.08f * prevAlpha),
+                            ),
+                        ),
+                        shape = CircleShape,
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = previousEnabled,
+                    ) {
+                        haptics.play(Haptic.SkipPrevious)
+                        onPrevious()
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_player_previous),
+                    contentDescription = stringResource(Res.string.widget_previous),
+                    tint = Color.White.copy(alpha = prevAlpha),
+                    modifier = Modifier
+                        .size(skipGlyphSize)
+                        .graphicsLayer { scaleY = 0.85f },
+                )
+            }
+        }
+
+        // Play / Pause floating glass capsule with soft depth & luminous glass fill
+        Box(
+            modifier = Modifier
+                .size(playTouchSize),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .size(playPillSize)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = CircleShape,
+                            spotColor = Color.White.copy(alpha = 0.22f),
+                            ambientColor = Color.Black.copy(alpha = 0.35f),
+                        )
+                        .clip(CircleShape)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.22f),
+                                    Color.White.copy(alpha = 0.08f),
+                                ),
+                            ),
+                        )
+                        .border(
+                            width = 0.8.dp,
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.30f),
+                                    Color.White.copy(alpha = 0.12f),
+                                ),
+                            ),
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(if (compact) 28.dp else 34.dp),
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(playPillSize)
+                        .shadow(
+                            elevation = 12.dp,
+                            shape = CircleShape,
+                            spotColor = Color.White.copy(alpha = 0.30f),
+                            ambientColor = Color.Black.copy(alpha = 0.40f),
+                        )
+                        .clip(CircleShape)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.26f),
+                                    Color.White.copy(alpha = 0.10f),
+                                ),
+                            ),
+                        )
+                        .border(
+                            width = 0.8.dp,
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.36f),
+                                    Color.White.copy(alpha = 0.14f),
+                                ),
+                            ),
+                            shape = CircleShape,
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            haptics.play(if (isPlaying) Haptic.Pause else Haptic.Resume)
+                            onPlayPause()
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(if (isPlaying) Res.drawable.ic_player_pause else Res.drawable.ic_player_play),
+                        contentDescription = stringResource(if (isPlaying) Res.string.pause else Res.string.play),
+                        tint = Color.White,
+                        modifier = Modifier.size(playGlyphSize),
+                    )
+                }
+            }
+        }
+
+        val nextAlpha by animateFloatAsState(
+            targetValue = if (nextEnabled) 1f else 0.3f,
+            label = "floatingNextAlpha",
+        )
+        // Next floating glass capsule button
+        Box(
+            modifier = Modifier
+                .size(skipTouchSize),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(skipPillSize)
+                    .shadow(
+                        elevation = 5.dp,
+                        shape = CircleShape,
+                        spotColor = Color.White.copy(alpha = 0.14f * nextAlpha),
+                        ambientColor = Color.Black.copy(alpha = 0.25f),
+                    )
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.16f * nextAlpha),
+                                Color.White.copy(alpha = 0.05f * nextAlpha),
+                            ),
+                        ),
+                    )
+                    .border(
+                        width = 0.8.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.20f * nextAlpha),
+                                Color.White.copy(alpha = 0.08f * nextAlpha),
+                            ),
+                        ),
+                        shape = CircleShape,
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = nextEnabled,
+                    ) {
+                        haptics.play(Haptic.SkipNext)
+                        onNext()
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_player_next),
+                    contentDescription = stringResource(Res.string.widget_next),
+                    tint = Color.White.copy(alpha = nextAlpha),
+                    modifier = Modifier
+                        .size(skipGlyphSize)
+                        .graphicsLayer { scaleY = 0.85f },
+                )
+            }
         }
     }
 }
@@ -2005,7 +2256,7 @@ fun NowPlayingScreen(
                         }
                     },
                     transport = {
-                        TransportRow(
+                        FloatingCapsuleTransportRow(
                             isPlaying = isPlaying,
                             isLoading = isLoading || audioVersionSwitching,
                             previousEnabled = !controlsLocked && (hasPrevious || pastRestartPoint),
@@ -2227,7 +2478,7 @@ fun NowPlayingScreen(
                                 }
                             },
                             transport = {
-                                TransportRow(
+                                FloatingCapsuleTransportRow(
                                     isPlaying = isPlaying,
                                     isLoading = isLoading || audioVersionSwitching,
                                     previousEnabled = !controlsLocked &&
@@ -2712,13 +2963,29 @@ fun NowPlayingScreen(
                                         ).roundToPx(),
                                     )
                                 }
-                                .width(38.dp)
-                                .height(5.dp)
+                                .width(40.dp)
+                                .height(5.5.dp)
                                 .graphicsLayer { alpha = spotifyChromeAlpha }
-                                .shadow(2.dp, RoundedCornerShape(3.dp), clip = false)
+                                .shadow(3.dp, RoundedCornerShape(3.dp), clip = false)
                                 .clip(RoundedCornerShape(3.dp))
-                                .additiveChrome(LocalPlayerChrome.current)
-                                .background(chromeWhite(0.70f)),
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.White.copy(alpha = 0.85f),
+                                            Color.White.copy(alpha = 0.65f),
+                                        ),
+                                    ),
+                                )
+                                .border(
+                                    width = 0.8.dp,
+                                    brush = Brush.verticalGradient(
+                                        listOf(
+                                            Color.White.copy(alpha = 0.24f),
+                                            Color.White.copy(alpha = 0.12f),
+                                        ),
+                                    ),
+                                    shape = RoundedCornerShape(3.dp),
+                                ),
                         )
                         // [p] is the shared album-to-panel transition. Keeping this in
                         // composition until its final frame gives the caption a real
@@ -4019,16 +4286,85 @@ fun NowPlayingScreen(
                         // read in this scope recomposes the whole player with it.
                         fadeIn = { !lyricsOpen && !queueOpen && p() > 0f },
                     ) {
+                    val deckSheen = rememberInfiniteTransition(label = "playerDeckSheen")
+                    val deckSheenPhase by deckSheen.animateFloat(
+                        initialValue = -0.3f,
+                        targetValue = 1.3f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 6000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                        label = "playerDeckSheenPhase",
+                    )
+                    val deckShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                    val reduceBlur by PlayerSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.onSizeChanged { size ->
-                            if (spotifyCanvasPresentation) {
-                                val measuredHeight = with(density) { size.height.toDp() }
-                                if (measuredHeight != spotifyCanvasDeckHeight) {
-                                    spotifyCanvasDeckHeight = measuredHeight
+                        modifier = Modifier
+                            .onSizeChanged { size ->
+                                if (spotifyCanvasPresentation) {
+                                    val measuredHeight = with(density) { size.height.toDp() }
+                                    if (measuredHeight != spotifyCanvasDeckHeight) {
+                                        spotifyCanvasDeckHeight = measuredHeight
+                                    }
                                 }
                             }
-                        },
+                            .fillMaxWidth()
+                            .clip(deckShape)
+                            .then(
+                                if (reduceBlur) {
+                                    Modifier.background(Color.Black.copy(alpha = 0.55f), deckShape)
+                                } else {
+                                    Modifier
+                                        .optimizedHazeEffect(
+                                            state = playerHaze,
+                                            style = HazeMaterials.ultraThin(Color.Black.copy(alpha = 0.30f)),
+                                        )
+                                        .background(
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    Color.White.copy(alpha = 0.12f),
+                                                    Color.White.copy(alpha = 0.03f),
+                                                    Color.Black.copy(alpha = 0.18f),
+                                                ),
+                                            ),
+                                            deckShape,
+                                        )
+                                },
+                            )
+                            // Subtle translucent white glass border (0.8.dp, 12-18% alpha)
+                            .border(
+                                width = 0.8.dp,
+                                brush = Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.18f),
+                                        Color.White.copy(alpha = 0.10f),
+                                        Color.Transparent,
+                                    ),
+                                ),
+                                shape = deckShape,
+                            )
+                            // Dynamic ambient glass sheen
+                            .drawWithContent {
+                                drawContent()
+                                val sheenWidth = size.width * 0.40f
+                                val startX = deckSheenPhase * size.width - sheenWidth / 2f
+                                drawRoundRect(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.White.copy(alpha = 0.03f),
+                                            Color.White.copy(alpha = 0.09f),
+                                            Color.Transparent,
+                                        ),
+                                        start = Offset(startX, 0f),
+                                        end = Offset(startX + sheenWidth, size.height),
+                                    ),
+                                    size = size,
+                                    cornerRadius = CornerRadius(28.dp.toPx()),
+                                )
+                            }
+                            .padding(top = 10.dp, bottom = 4.dp),
                     ) {
                     Column(
                         modifier = Modifier
@@ -4056,7 +4392,27 @@ fun NowPlayingScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(lyricSlotHeight),
+                            .height(lyricSlotHeight)
+                            .then(
+                                if (!lyricsOpen && syncedLyricsEnabled) {
+                                    Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .border(
+                                            width = 0.8.dp,
+                                            brush = Brush.verticalGradient(
+                                                listOf(
+                                                    Color.White.copy(alpha = 0.14f),
+                                                    Color.White.copy(alpha = 0.04f),
+                                                ),
+                                            ),
+                                            shape = RoundedCornerShape(12.dp),
+                                        )
+                                        .padding(horizontal = 10.dp)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                         contentAlignment = Alignment.CenterStart,
                     ) {
                     if (!lyricsOpen && syncedLyricsEnabled) {
@@ -4123,7 +4479,7 @@ fun NowPlayingScreen(
                     }
 
                     val transport: @Composable () -> Unit = {
-                        TransportRow(
+                        FloatingCapsuleTransportRow(
                             isPlaying = isPlaying,
                             isLoading = isLoading || audioVersionSwitching,
                             previousEnabled = !controlsLocked &&
